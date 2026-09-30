@@ -1,0 +1,33 @@
+# Publica só o LifePlan em https://teste.ericzin.pages.dev (preview do projeto ericzin).
+# Não mexe em ericzin.pages.dev nem em seucofrin.pages.dev.
+# Precisa dos secrets CLOUDFLARE_API_TOKEN e CLOUDFLARE_ACCOUNT_ID no repositório.
+name: Publicar teste no Cloudflare
+
+on:
+  push:
+    branches: [claude/ericzin-pastel-colors-contrast-xh49z5]
+  workflow_dispatch:
+
+concurrency:
+  group: publicar-teste
+  cancel-in-progress: true
+
+jobs:
+  publicar-teste:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # LifePlan vai sem a pasta tools/
+      - name: Preparar LifePlan
+        run: |
+          mkdir -p dist
+          cp -r ericzin-life-plan dist/lifeplan
+          rm -rf dist/lifeplan/tools
+
+      - name: Publicar teste.ericzin.pages.dev
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist/lifeplan --project-name ericzin --branch teste --commit-dirty=true
