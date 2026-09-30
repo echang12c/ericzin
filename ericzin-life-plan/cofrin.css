@@ -5,10 +5,10 @@
   --ink:var(--text); --muted:var(--text-2); --line:var(--border);
   --primary-soft:var(--primary-light);
   --accent:var(--primary); --accent-soft:var(--primary-light);
-  --income:#0f9d58; --income-soft:#e2f9ec;
-  --expense:#e5484d; --expense-soft:#fdecec;
-  --warn:#d97706; --warn-soft:#fef3c7;
-  --danger:#e5484d; --sun:#FFC53D;
+  --income:#0b6b45; --income-soft:#dcf5e8;
+  --expense:#b3202f; --expense-soft:#fde6e8;
+  --warn:#8a5300; --warn-soft:#fdf0cf;
+  --danger:#b3202f; --sun:#FFC53D;
   --radius:20px;
   --display:'Baloo 2',system-ui,sans-serif;
   --body:'Nunito',system-ui,sans-serif;
@@ -17,15 +17,15 @@
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]) #cofrin{
-    --income:#6ee6a4; --income-soft:#123527;
-    --expense:#ff8a8a; --expense-soft:#3a1c20;
+    --income:#8ff0bd; --income-soft:#123527;
+    --expense:#ffb3b8; --expense-soft:#3a1c20;
     --warn:#fbbf24; --warn-soft:#3a2a0c; --danger:#ff8a8a;
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"] #cofrin{
-  --income:#6ee6a4; --income-soft:#123527;
-  --expense:#ff8a8a; --expense-soft:#3a1c20;
+  --income:#8ff0bd; --income-soft:#123527;
+  --expense:#ffb3b8; --expense-soft:#3a1c20;
   --warn:#fbbf24; --warn-soft:#3a2a0c; --danger:#ff8a8a;
   color-scheme:dark;
 }
@@ -43,13 +43,13 @@
 #cofrin .verifyHint{font-size:13px;color:var(--muted)}
 #cofrin .verifyOk{color:var(--primary);font-size:13px;min-height:18px}
 #cofrin .loginCard{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:36px 32px;width:100%;max-width:380px;box-shadow:var(--shadow)}
-#cofrin .brand{display:block;padding:0;gap:0;font-family:var(--display);font-weight:800;font-size:34px;letter-spacing:-.02em;background:linear-gradient(90deg,#bcb0fc,#8570fd 45%,#6349f8);-webkit-background-clip:text;background-clip:text;color:transparent}
+#cofrin .brand{display:block;padding:0;gap:0;font-family:var(--display);font-weight:800;font-size:34px;letter-spacing:-.02em;background:linear-gradient(90deg,#d9d2fb,#a99cf5 45%,#8f80ee);-webkit-background-clip:text;background-clip:text;color:transparent}
 #cofrin .brand small{display:block;font-family:var(--body);font-weight:500;font-size:13px;color:var(--muted);letter-spacing:.04em;margin-top:2px}
 #cofrin .loginCard form{margin-top:26px;display:grid;gap:12px}
 #cofrin .field label{display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
 #cofrin .field input,#cofrin .field select{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 12px;background:var(--surface);outline:none}
 #cofrin .field input:focus,#cofrin .field select:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
-#cofrin .btnPrimary{background:linear-gradient(135deg,var(--primary),var(--primary-hover));color:#fff;border:none;border-radius:12px;padding:12px;font-weight:700;font-size:15px;box-shadow:0 4px 12px rgba(99,73,248,.3)}
+#cofrin .btnPrimary{background:linear-gradient(135deg,var(--primary),var(--primary-hover));color:var(--on-accent);border:none;border-radius:12px;padding:12px;font-weight:700;font-size:15px;box-shadow:0 4px 12px rgba(169,156,245,.3)}
 #cofrin .btnPrimary:hover{filter:brightness(1.08)}
 #cofrin .btnGhost{background:transparent;border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-weight:600;color:var(--ink)}
 #cofrin .btnGhost:hover{background:var(--surface-2)}
@@ -98,13 +98,13 @@
 #cofrin .monthBar button{border:1px solid var(--line);background:var(--surface);border-radius:50%;width:32px;height:32px;font-size:16px;line-height:1}
 #cofrin .monthLabel{font-family:var(--display);font-weight:700;font-size:18px;min-width:190px;text-align:center;text-transform:capitalize}
 #cofrin .tabsMenu{max-width:980px;margin:0 auto;padding:0 0 12px;position:relative}
-#cofrin .tabsToggle{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:1px solid var(--primary-hover);background:linear-gradient(135deg,var(--primary),var(--primary-hover));color:#fff;border-radius:999px;padding:9px 16px;font-weight:600;font-size:14px;box-shadow:0 3px 10px rgba(99,73,248,.3)}
+#cofrin .tabsToggle{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:1px solid var(--primary-hover);background:linear-gradient(135deg,var(--primary),var(--primary-hover));color:var(--on-accent);border-radius:999px;padding:9px 16px;font-weight:600;font-size:14px;box-shadow:0 3px 10px rgba(169,156,245,.3)}
 #cofrin .tabsToggle .chev{font-size:11px;transition:transform .2s}
 #cofrin .tabsMenu.open .tabsToggle .chev{transform:rotate(180deg)}
 #cofrin nav.tabs{display:none;flex-direction:column;gap:6px;padding-top:8px}
 #cofrin .tabsMenu.open nav.tabs{display:flex}
 #cofrin nav.tabs button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:9px 16px;font-weight:600;font-size:14px;color:var(--muted);white-space:nowrap;text-align:center}
-#cofrin nav.tabs button.active{background:linear-gradient(135deg,var(--primary),var(--primary-hover));border-color:var(--primary-hover);color:#fff;box-shadow:0 3px 10px rgba(99,73,248,.3)}
+#cofrin nav.tabs button.active{background:linear-gradient(135deg,var(--primary),var(--primary-hover));border-color:var(--primary-hover);color:var(--on-accent);box-shadow:0 3px 10px rgba(169,156,245,.3)}
 #cofrin main{max-width:980px;margin:0 auto;padding:20px 0 90px}
 
 /* ---------- Cards / geral ---------- */
@@ -119,7 +119,7 @@
 #cofrin .kpi .val{font-family:var(--mono);font-weight:600;font-size:24px;margin-top:6px}
 #cofrin .kpi .val small{font-size:15px;opacity:.65}
 #cofrin .pos{color:var(--income)}#cofrin .neg{color:var(--expense)}
-#cofrin .saldoHero{background:linear-gradient(135deg,#9c8bff 0%,#8570fd 55%,#6349f8 100%);color:#fff;border:none;box-shadow:0 8px 24px rgba(99,73,248,.35)}
+#cofrin .saldoHero{background:linear-gradient(135deg,#cfc7fa 0%,#a99cf5 55%,#8f80ee 100%);color:#fff;border:none;box-shadow:0 8px 24px rgba(169,156,245,.35)}
 #cofrin .saldoHero.negativo{background:linear-gradient(135deg,#FF7A59 0%,#F04438 55%,#B42334 100%);box-shadow:0 8px 24px rgba(240,68,56,.35)}
 #cofrin .saldoHero .lbl{color:#fff;font-weight:800;font-size:13px;text-shadow:0 1px 3px rgba(0,0,0,.25)}
 #cofrin .saldoHero .val{font-family:var(--display);font-weight:800;font-size:40px;letter-spacing:-.02em}
@@ -175,7 +175,7 @@
 #cofrin .diaBar button.nav{display:inline-flex;flex-direction:row;align-items:center;justify-content:center;border:1px solid var(--line);background:var(--surface);border-radius:50%;width:34px;height:34px;font-size:16px;line-height:1}
 #cofrin .diaLabel{font-family:var(--display);font-weight:700;font-size:16px;min-width:200px;text-align:center;text-transform:capitalize}
 #cofrin .btnHoje{border:1px solid var(--primary);background:var(--primary-soft);color:var(--primary);border-radius:999px;padding:6px 14px;font-size:13px;font-weight:700}
-#cofrin .metaHero{background:linear-gradient(135deg,#6349f8 0%,#8570fd 55%,#bcb0fc 100%);color:#fff;border:none;box-shadow:0 8px 24px rgba(99,73,248,.35);display:flex;align-items:center;gap:16px}
+#cofrin .metaHero{background:linear-gradient(135deg,#8f80ee 0%,#a99cf5 55%,#d9d2fb 100%);color:#fff;border:none;box-shadow:0 8px 24px rgba(169,156,245,.35);display:flex;align-items:center;gap:16px}
 #cofrin .metaHero .emoji{font-size:42px;line-height:1}
 #cofrin .metaHero .info{flex:1}
 #cofrin .metaHero .count{font-family:var(--display);font-weight:800;font-size:22px}
@@ -187,10 +187,10 @@
 #cofrin .metaForm input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 #cofrin .metaFormRow{display:flex;gap:10px;align-items:flex-end}
 #cofrin .metaFormRow .field{flex:1}
-#cofrin .btnAddMeta{background:linear-gradient(135deg,var(--primary),var(--primary-hover));color:#fff;border:none;border-radius:12px;padding:12px 20px;font-weight:700;font-size:15px;box-shadow:0 4px 12px rgba(99,73,248,.3);white-space:nowrap}
+#cofrin .btnAddMeta{background:linear-gradient(135deg,var(--primary),var(--primary-hover));color:var(--on-accent);border:none;border-radius:12px;padding:12px 20px;font-weight:700;font-size:15px;box-shadow:0 4px 12px rgba(169,156,245,.3);white-space:nowrap}
 #cofrin .diasRow{display:flex;gap:6px;flex-wrap:wrap}
 #cofrin .diaChip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 13px;font-size:13px;font-weight:700;color:var(--muted);transition:all .12s}
-#cofrin .diaChip.on{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 3px 10px rgba(99,73,248,.3)}
+#cofrin .diaChip.on{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 3px 10px rgba(169,156,245,.3)}
 #cofrin .horaBadge{font-family:var(--mono);font-size:12px;font-weight:600;background:var(--warn-soft);color:var(--warn);border-radius:999px;padding:4px 10px;white-space:nowrap}
 #cofrin .metaDias{font-size:12px;color:var(--muted);font-weight:500;margin-top:1px}
 #cofrin .metaItem{display:flex;align-items:center;gap:12px;padding:13px 4px;border-bottom:1px dashed var(--line)}
@@ -312,7 +312,7 @@
 #cofrin .guiaSkip{border:none;background:none;color:var(--muted);font-size:13px;width:100%;text-align:center;margin-top:12px;text-decoration:underline}
 
 /* ---------- Modal / toast / fab ---------- */
-#cofrin .fab{position:fixed;right:22px;bottom:22px;z-index:40;background:linear-gradient(135deg,var(--primary),var(--primary-hover));color:#fff;border:none;border-radius:999px;width:58px;height:58px;font-size:28px;box-shadow:0 8px 24px rgba(99,73,248,.45);transition:transform .15s}
+#cofrin .fab{position:fixed;right:22px;bottom:22px;z-index:40;background:linear-gradient(135deg,var(--primary),var(--primary-hover));color:var(--on-accent);border:none;border-radius:999px;width:58px;height:58px;font-size:28px;box-shadow:0 8px 24px rgba(169,156,245,.45);transition:transform .15s}
 #cofrin .fab:hover{transform:scale(1.08) rotate(90deg)}
 #cofrin .modalWrap{position:fixed;inset:0;background:rgba(17,24,39,.55);display:flex;align-items:flex-end;justify-content:center;z-index:50}
 @media(min-width:640px){#cofrin .modalWrap{align-items:center}}
@@ -329,13 +329,13 @@
 
 /* ---------- Mercado (notas fiscais) ---------- */
 #cofrin .linkBtn{background:none;border:none;color:var(--primary);font-weight:700;font-size:13px;text-decoration:underline;padding:4px 0;cursor:pointer}
-#cofrin .mkHero{background:linear-gradient(135deg,#6349f8 0%,#8570fd 60%,#a898fd 100%);color:#fff;border:none;box-shadow:0 8px 24px rgba(99,73,248,.35);display:flex;align-items:center;gap:16px}
+#cofrin .mkHero{background:linear-gradient(135deg,#8f80ee 0%,#a99cf5 60%,#cfc7fa 100%);color:#fff;border:none;box-shadow:0 8px 24px rgba(169,156,245,.35);display:flex;align-items:center;gap:16px}
 #cofrin .mkHero .emoji{font-size:42px;line-height:1}
 #cofrin .mkHero .info{flex:1}
 #cofrin .mkHero .t{font-family:var(--display);font-weight:800;font-size:19px}
 #cofrin .mkHero .s{font-size:13px;color:rgba(255,255,255,.9);margin-top:2px}
 #cofrin .mkHero .btns{display:flex;flex-direction:column;gap:8px}
-#cofrin .mkHero button{background:#fff;color:#6349f8;border:none;border-radius:12px;padding:11px 16px;font-weight:800;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.15);white-space:nowrap}
+#cofrin .mkHero button{background:#fff;color:#4a3bb8;border:none;border-radius:12px;padding:11px 16px;font-weight:800;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.15);white-space:nowrap}
 @media(max-width:560px){#cofrin .mkHero{flex-direction:column;text-align:center}#cofrin .mkHero .btns{width:100%}}
 #cofrin .mkTag{display:inline-block;font-size:11px;font-weight:700;background:var(--primary-soft);color:var(--income);border-radius:999px;padding:2px 8px;margin-left:6px;white-space:nowrap}
 #cofrin .mkTag.alta{background:var(--expense-soft);color:var(--expense)}

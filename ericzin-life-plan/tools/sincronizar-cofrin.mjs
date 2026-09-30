@@ -33,16 +33,16 @@ const cores = [
   ['border-color:#009E62', 'border-color:var(--primary-hover)', true],
   ['rgba(0,168,107,.3)', 'rgba(99,73,248,.3)', true],
   ['linear-gradient(90deg,#00C87B,#00A86B)', 'linear-gradient(90deg,var(--primary-500),var(--primary))', false],
-  ['linear-gradient(135deg,#00C87B 0%,#00A88F 55%,#0E7DC2 100%)', 'linear-gradient(135deg,#9c8bff 0%,#8570fd 55%,#6349f8 100%)', false],
+  ['linear-gradient(135deg,#00C87B 0%,#00A88F 55%,#0E7DC2 100%)', 'linear-gradient(135deg,#cfc7fa 0%,#a99cf5 55%,#8f80ee 100%)', false],
   ['rgba(0,168,140,.35)', 'rgba(99,73,248,.35)', false],
   ['.metaItem.done .metaCheck{background:linear-gradient(135deg,#00C87B,#00A86B);border-color:#00A86B}', '.metaItem.done .metaCheck{background:var(--income);border-color:var(--income)}', false],
-  ['linear-gradient(135deg,#0E7DC2 0%,#00A88F 60%,#00C87B 100%)', 'linear-gradient(135deg,#6349f8 0%,#8570fd 60%,#a898fd 100%)', false],
+  ['linear-gradient(135deg,#0E7DC2 0%,#00A88F 60%,#00C87B 100%)', 'linear-gradient(135deg,#8f80ee 0%,#a99cf5 60%,#cfc7fa 100%)', false],
   ['rgba(14,125,194,.35)', 'rgba(99,73,248,.35)', false],
-  ['color:#0B6BA8', 'color:#6349f8', false],
+  ['color:#0B6BA8', 'color:#4a3bb8', false],
   ['linear-gradient(135deg,#8B5CF6,#7C3AED)', 'linear-gradient(135deg,var(--primary),var(--primary-hover))', false],
   ['linear-gradient(135deg,#FF8A3C,#FF5C4D)', 'linear-gradient(135deg,var(--primary),var(--primary-hover))', false],
   ['rgba(255,92,77,.45)', 'rgba(99,73,248,.45)', false],
-  ['background:linear-gradient(90deg,#00A86B,#0E7DC2 70%,#8B5CF6)', 'background:linear-gradient(90deg,#bcb0fc,#8570fd 45%,#6349f8)', false],
+  ['background:linear-gradient(90deg,#00A86B,#0E7DC2 70%,#8B5CF6)', 'background:linear-gradient(90deg,#d9d2fb,#a99cf5 45%,#8f80ee)', false],
   ['color:#00794E', 'color:var(--income)', true],
   ['rgba(21,32,25,.45)', 'rgba(17,24,39,.55)', false],
   ['rgba(139,92,246,.3)', 'rgba(99,73,248,.3)', true],
@@ -54,7 +54,7 @@ const cores = [
   ['#FFFDF6', 'var(--surface-2)', true],
   ['.btnGhost:hover{background:#fff}', '.btnGhost:hover{background:var(--surface-2)}', false],
   ['background:#E8ECE8', 'background:var(--border-strong)', false],
-  ['linear-gradient(135deg,#8B5CF6 0%,#C061CB 60%,#FF5C9D 100%)', 'linear-gradient(135deg,#6349f8 0%,#8570fd 55%,#bcb0fc 100%)', false],
+  ['linear-gradient(135deg,#8B5CF6 0%,#C061CB 60%,#FF5C9D 100%)', 'linear-gradient(135deg,#8f80ee 0%,#a99cf5 55%,#d9d2fb 100%)', false],
   ['rgba(139,92,246,.35)', 'rgba(99,73,248,.35)', false],
   ['color:#B45309', 'color:var(--warn)', false],
   ['box-shadow:0 10px 40px rgba(21,32,25,.08)', 'box-shadow:var(--shadow)', false],
@@ -62,6 +62,10 @@ const cores = [
   ['#toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--ink)', '#toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:#111827', false],
 ];
 for (const [a, b, all] of cores) css = rep(css, a, b, { all });
+
+// pastel: texto escuro sobre os botões roxos e sombras suaves
+css = css.replace(/(var\(--primary-hover\)\)[^}]*?);?color:#fff/g, '$1;color:var(--on-accent)');
+css = css.replace(/rgba\(99,73,248,/g, 'rgba(169,156,245,');
 
 // cabeçalho: sem a borda arco-íris e sem a classe .app (colide com a do LifePlan)
 css = css.replace(/^header\.app\{.*\}$/m, 'header.cfHeader{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--border);margin-bottom:4px}');
@@ -122,10 +126,10 @@ const tokens = `/* Meu Cofrin dentro do LifePlan — gerado a partir do moneyeri
   --ink:var(--text); --muted:var(--text-2); --line:var(--border);
   --primary-soft:var(--primary-light);
   --accent:var(--primary); --accent-soft:var(--primary-light);
-  --income:#0f9d58; --income-soft:#e2f9ec;
-  --expense:#e5484d; --expense-soft:#fdecec;
-  --warn:#d97706; --warn-soft:#fef3c7;
-  --danger:#e5484d; --sun:#FFC53D;
+  --income:#0b6b45; --income-soft:#dcf5e8;
+  --expense:#b3202f; --expense-soft:#fde6e8;
+  --warn:#8a5300; --warn-soft:#fdf0cf;
+  --danger:#b3202f; --sun:#FFC53D;
   --radius:20px;
   --display:'Baloo 2',system-ui,sans-serif;
   --body:'Nunito',system-ui,sans-serif;
@@ -134,15 +138,15 @@ const tokens = `/* Meu Cofrin dentro do LifePlan — gerado a partir do moneyeri
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]) #cofrin{
-    --income:#6ee6a4; --income-soft:#123527;
-    --expense:#ff8a8a; --expense-soft:#3a1c20;
+    --income:#8ff0bd; --income-soft:#123527;
+    --expense:#ffb3b8; --expense-soft:#3a1c20;
     --warn:#fbbf24; --warn-soft:#3a2a0c; --danger:#ff8a8a;
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"] #cofrin{
-  --income:#6ee6a4; --income-soft:#123527;
-  --expense:#ff8a8a; --expense-soft:#3a1c20;
+  --income:#8ff0bd; --income-soft:#123527;
+  --expense:#ffb3b8; --expense-soft:#3a1c20;
   --warn:#fbbf24; --warn-soft:#3a2a0c; --danger:#ff8a8a;
   color-scheme:dark;
 }
@@ -168,8 +172,8 @@ js = rep(js, 'firebase.appCheck().activate(', 'firebase.appCheck(cofApp).activat
 js = rep(js, 'const auth = firebase.auth();', 'const auth = cofApp.auth();');
 js = rep(js, 'const db = firebase.firestore();', 'const db = cofApp.firestore();');
 js = rep(js, "navigator.serviceWorker.register('sw.js')", "navigator.serviceWorker.register('cofrin-sw.js')");
-js = rep(js, "borderColor:'#0E7DC2', backgroundColor:'#0E7DC2'", "borderColor:'#8570fd', backgroundColor:'#8570fd'");
-js = rep(js, "backgroundColor:medias.map((_,i)=>i===0?'#00C87B':'#8FA3B8')", "backgroundColor:medias.map((_,i)=>i===0?'#8570fd':'#9ca3af')");
+js = rep(js, "borderColor:'#0E7DC2', backgroundColor:'#0E7DC2'", "borderColor:'#a99cf5', backgroundColor:'#a99cf5'");
+js = rep(js, "backgroundColor:medias.map((_,i)=>i===0?'#00C87B':'#8FA3B8')", "backgroundColor:medias.map((_,i)=>i===0?'#a99cf5':'#cfc9e6')");
 js = rep(js, "{e:'👋',t:'Bem-vindo ao SeuCofrin!'", "{e:'👋',t:'Bem-vindo ao Meu Cofrin!'");
 js = rep(js, 'O SeuCofrin funciona como um app de verdade', 'O Meu Cofrin funciona como um app de verdade');
 
