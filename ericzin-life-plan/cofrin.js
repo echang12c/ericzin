@@ -1081,7 +1081,7 @@ function mkGraficoComparativo(p){
   mkChart('mkComp','chartMkComp',{type:'bar',
     data:{labels:medias.map(x=>x.m),datasets:[
       {label:'Preço médio',data:medias.map(x=>x.media),
-        backgroundColor:medias.map((_,i)=>i===0?'#8570fd':'#9ca3af'),borderRadius:5},
+        backgroundColor:medias.map((_,i)=>i===0?'#a99cf5':'#cfc9e6'),borderRadius:5},
       {label:'Menor preço',data:medias.map(x=>x.min),backgroundColor:'#FFC53D',borderRadius:5},
     ]},
     options:{maintainAspectRatio:false,
@@ -1815,7 +1815,7 @@ function renderContasChart(){
   document.getElementById('ctChartTitle').textContent='Gasto mês a mês — '+titulo;
   mkChart('contas','chartContas',{type:'line',
     data:{labels:meses.map(mesCurto), datasets:[{label:titulo, data,
-      borderColor:'#8570fd', backgroundColor:'#8570fd',
+      borderColor:'#a99cf5', backgroundColor:'#a99cf5',
       borderWidth:2, pointRadius:3, tension:.3, fill:false}]},
     options:{maintainAspectRatio:false,
       plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>' '+c.parsed.y.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}}},
