@@ -1,0 +1,54 @@
+# Publica o Worker garmin-sono e (opcionalmente) gera o token do Garmin.
+# Rode à mão: aba Actions → Garmin Sono → Run workflow.
+# Secrets necessários: CLOUDFLARE_API_TOKEN (com permissão Workers Scripts: Edit),
+# CLOUDFLARE_ACCOUNT_ID e, para gerar o token, GARMIN_EMAIL e GARMIN_PASSWORD.
+name: Garmin Sono
+
+on:
+  workflow_dispatch:
+    inputs:
+      gerar_token:
+        description: Fazer login no Garmin e guardar o token no Worker
+        type: boolean
+        default: true
+      codigo_2fa:
+        description: Código 2FA do Garmin (só se usar verificação em duas etapas)
+        type: string
+        default: ''
+
+jobs:
+  garmin-sono:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Gerar token do Garmin
+        if: ${{ inputs.gerar_token }}
+        env:
+          GARMIN_EMAIL: ${{ secrets.GARMIN_EMAIL }}
+          GARMIN_PASSWORD: ${{ secrets.GARMIN_PASSWORD }}
+          GARMIN_2FA: ${{ inputs.codigo_2fa }}
+        run: |
+          pip install garth
+          python - <<'PY' > oauth1.json
+          import json, os, garth
+          mfa = os.environ.get("GARMIN_2FA", "").strip()
+          garth.login(os.environ["GARMIN_EMAIL"], os.environ["GARMIN_PASSWORD"],
+                      prompt_mfa=(lambda: mfa) if mfa else None)
+          t = garth.client.oauth1_token
+          print(json.dumps({"oauth_token": t.oauth_token,
+                            "oauth_token_secret": t.oauth_token_secret,
+                            "mfa_token": getattr(t, "mfa_token", None)}))
+          PY
+          echo "::add-mask::$(python -c "import json;d=json.load(open('oauth1.json'));print(d['oauth_token_secret'])")"
+          echo "GARMIN_OAUTH1=$(cat oauth1.json)" >> "$GITHUB_ENV"
+          rm oauth1.json
+
+      - name: Publicar o Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: garmin-sono
+          command: deploy
+          secrets: ${{ inputs.gerar_token && 'GARMIN_OAUTH1' || '' }}
