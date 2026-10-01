@@ -7,6 +7,8 @@ Os apps pessoais do Eric, num repositório só.
 | [`ericzin-life-plan/`](ericzin-life-plan/) | Ericzin's Life Plan: painel semanal com os 6 pilares da vida, incluindo a seção Meu Cofrin | https://ericzin.pages.dev |
 | [`meucofrin/`](meucofrin/) | Meu Cofrin: finanças da casa (lançamentos, metas, Mercado, Contas da casa, Relatórios) | https://seucofrin.pages.dev |
 
+[`garmin-sono/`](garmin-sono/) é o Worker que traz o sono do Garmin para o LifePlan (deploy manual, ver o README dele).
+
 Os dois são sites estáticos (HTML + JS, sem build) hospedados no Cloudflare Pages.
 
 ## Como as duas pastas se relacionam

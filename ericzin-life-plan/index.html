@@ -1484,6 +1484,90 @@
     return data.sono;
   }
 
+  var GARMIN_URL = 'https://garmin-sono.ericchang12c.workers.dev';
+  var garminState = { last:0, busy:false, msg:'' };
+
+  function localIso(d){ return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate()); }
+  function fmtH(h){ return h == null ? '–' : (Math.floor(h) + 'h' + pad2(Math.round((h % 1) * 60)) ); }
+  function fmtClock(ms){
+    if(!ms) return '–';
+    var d = new Date(ms); // timestamp "local" do Garmin: ler em UTC dá a hora de parede
+    return pad2(d.getUTCHours()) + ':' + pad2(d.getUTCMinutes());
+  }
+
+  /* Busca as noites da semana no Garmin (via Worker) e grava em data.sono.weeks[wk].
+     Só roda logado (o Worker confere o token do Firebase) e no máximo a cada 10 min,
+     a não ser que force = true (botão Atualizar). */
+  function syncGarmin(force){
+    if(garminState.busy) return;
+    if(!cloudMode || !cloudUser){ garminState.msg = 'Entre com o Google para sincronizar com o Garmin.'; return; }
+    if(!force && Date.now() - garminState.last < 10*60e3) return;
+    garminState.busy = true; garminState.last = Date.now(); garminState.msg = 'Sincronizando com o Garmin…';
+    var wk = getWeekKey();
+    var monday = new Date(wk + 'T12:00:00');
+    var sunday = addDays(monday, 6);
+    var todayIso = localIso(new Date());
+    var to = localIso(sunday) < todayIso ? localIso(sunday) : todayIso;
+    cloudUser.getIdToken().then(function(tok){
+      return fetch(GARMIN_URL + '/sono?from=' + wk + '&to=' + to, { headers:{ Authorization:'Bearer ' + tok } });
+    }).then(function(r){
+      return r.json().then(function(j){ if(!r.ok) throw new Error(j.erro || r.status); return j; });
+    }).then(function(j){
+      var dd = loadData(); ensureSono(dd);
+      var wdoc = dd.sono.weeks[wk];
+      wdoc.garmin = wdoc.garmin || {};
+      (j.noites || []).forEach(function(n){
+        var idx = Math.round((new Date(n.data + 'T12:00:00') - monday) / 864e5);
+        if(idx < 0 || idx > 6) return;
+        var key = WEEKDAYS[idx].key;
+        wdoc.garmin[key] = n;
+        if(n.horas != null) wdoc.hours[key] = n.horas;
+      });
+      wdoc.garminSync = Date.now();
+      saveData(dd);
+      garminState.msg = (j.noites || []).length ? '' : 'O Garmin ainda não tem noites registradas nesta semana.';
+    }).catch(function(e){
+      garminState.msg = 'Não consegui falar com o Garmin (' + e.message + ').';
+    }).then(function(){
+      garminState.busy = false;
+      if(loadPage() === 'sono') renderSonoPage();
+    });
+  }
+
+  function garminCardHtml(wd, todayKey){
+    var g = wd.garmin || {};
+    var key = g[todayKey] ? todayKey : WEEKDAYS.map(function(d){ return d.key; }).filter(function(k){ return g[k]; }).pop();
+    var status = garminState.busy ? 'Sincronizando…' :
+      (garminState.msg || (wd.garminSync ? 'Sincronizado às ' + pad2(new Date(wd.garminSync).getHours()) + ':' + pad2(new Date(wd.garminSync).getMinutes()) : ''));
+    var btn = '<button class="ritual-btn" id="garminRefresh"' + (garminState.busy ? ' disabled' : '') + '>atualizar</button>';
+    var head = '<div class="chart-card-head"><span>Sua noite · Garmin</span>' + btn + '</div>' +
+               '<div class="page-sub" style="margin:2px 0 8px;">' + escapeHtml(status) + '</div>';
+    if(!key) return '<div class="card" style="margin-top:1.1rem;">' + head + '</div>';
+    var n = g[key];
+    var total = (n.profundo||0) + (n.leve||0) + (n.rem||0) + (n.acordado||0) || 1;
+    var fases = [
+      { nome:'Profundo', v:n.profundo, cor:'#6c5ce7' },
+      { nome:'Leve',     v:n.leve,     cor:'#a99cf5' },
+      { nome:'REM',      v:n.rem,      cor:'#f4b184' },
+      { nome:'Acordado', v:n.acordado, cor:'#d8d4e8' }
+    ];
+    var barra = '<div style="display:flex;height:14px;border-radius:7px;overflow:hidden;margin:10px 0 8px;">' +
+      fases.map(function(f){ return '<div style="width:' + ((f.v||0)/total*100) + '%;background:' + f.cor + '"></div>'; }).join('') + '</div>';
+    var legenda = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;font-size:13px;font-weight:600;">' +
+      fases.map(function(f){ return '<span><i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:' + f.cor + ';margin-right:6px"></i>' + f.nome + ' ' + fmtH(f.v) + '</span>'; }).join('') + '</div>';
+    var extra = [];
+    if(n.dormiu) extra.push('Dormiu ' + fmtClock(n.dormiu) + ' · acordou ' + fmtClock(n.acordou));
+    if(n.fc) extra.push('FC repouso ' + n.fc + ' bpm');
+    if(n.hrv) extra.push('HRV ' + n.hrv + ' ms');
+    return '<div class="card" style="margin-top:1.1rem;">' + head +
+      '<div style="display:flex;gap:22px;align-items:baseline;">' +
+        '<div><div class="stat-number">' + fmtH(n.horas) + '</div><div class="stat-number-label">' + (key === todayKey ? 'essa noite' : 'noite de ' + key) + '</div></div>' +
+        '<div><div class="stat-number">' + (n.score != null ? n.score : '–') + '</div><div class="stat-number-label">score de sono</div></div>' +
+      '</div>' + barra + legenda +
+      (extra.length ? '<div class="page-sub" style="margin-top:10px;">' + extra.join(' · ') + '</div>' : '') +
+    '</div>';
+  }
+
   function renderSonoPage(){
     var pillar = PILLARS.find(function(p){ return p.id === 'sono'; });
     var data = loadData();
@@ -1510,15 +1594,17 @@
           '<div class="chart-card-head"><span>Horas de sono</span><span>média: ' + avg.toFixed(1) + 'h</span></div>' +
           '<div class="page-sub" style="margin:2px 0 8px;">Seg a dom · meta ' + meta + 'h</div>' +
           '<div class="chart-wrap" style="height:168px;"><canvas id="sonoChart"></canvas></div>' +
+          (wd.garmin && wd.garmin[todayKey] ? '' :
           '<div class="stepper-row" style="margin-top:14px;">' +
             '<span class="field-label" style="margin:0;">Hoje</span>' +
             '<button class="stepper-btn" id="hoursMinus">&minus;</button>' +
             '<span class="stepper-value" id="hoursValue">' + wd.hours[todayKey] + 'h</span>' +
             '<button class="stepper-btn" id="hoursPlus">+</button>' +
-          '</div>' +
+          '</div>') +
           '<div class="field-label" style="margin-top:16px;">Energia ao acordar hoje</div>' +
           '<div class="rating-dots" id="energyDots" style="--dotcolor:' + pillar.accent + '"></div>' +
         '</div>' +
+        garminCardHtml(wd, todayKey) +
         '<div class="stat-duo" style="margin-top:1.1rem;">' +
           '<div class="card stat-number-card">' +
             '<div class="card-title">Média da semana</div>' +
@@ -1547,8 +1633,12 @@
       saveData(dd);
       renderSonoPage();
     }
-    document.getElementById('hoursMinus').onclick = function(){ adjustHours(-0.5); };
-    document.getElementById('hoursPlus').onclick = function(){ adjustHours(0.5); };
+    var hm = document.getElementById('hoursMinus'), hp = document.getElementById('hoursPlus');
+    if(hm) hm.onclick = function(){ adjustHours(-0.5); };
+    if(hp) hp.onclick = function(){ adjustHours(0.5); };
+    var gr = document.getElementById('garminRefresh');
+    if(gr) gr.onclick = function(){ syncGarmin(true); renderSonoPage(); };
+    syncGarmin(false);
 
     var energyDots = document.getElementById('energyDots');
     for(var i=1;i<=5;i++){
