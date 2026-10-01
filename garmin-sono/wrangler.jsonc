@@ -6,5 +6,12 @@
     "FIREBASE_PROJECT_ID": "ericzinlifeplan",
     "ALLOWED_EMAIL": "ericchang12c@gmail.com"
   },
-  "observability": { "enabled": true }
+  "observability": {
+    "enabled": true
+  },
+  "kv_namespaces": [
+    {
+      "binding": "GARMIN_KV"
+    }
+  ]
 }

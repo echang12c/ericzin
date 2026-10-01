@@ -1,7 +1,7 @@
 /* Garmin Sono — ponte entre o LifePlan e o Garmin Connect.
    O LifePlan chama GET /sono?from=YYYY-MM-DD&to=YYYY-MM-DD com o token do
    Firebase (login Google). O Worker confere que é você, usa os tokens do
-   Garmin guardados no secret GARMIN_OAUTH1 e devolve um resumo por noite.
+   Garmin guardados no secret GARMIN_TOKENS e devolve um resumo por noite.
    Tokens vêm de tools/garmin-tokens.py (login uma vez, com 2FA se tiver). */
 
 const te = new TextEncoder();
@@ -48,59 +48,71 @@ async function verifyFirebaseToken(token, projectId) {
   }
 }
 
-/* ---------------- OAuth1 (assinatura HMAC-SHA1) para trocar pelo token OAuth2 ---------------- */
-const enc = (s) => encodeURIComponent(s).replace(/[!'()*]/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase());
+/* ---------------- Sessão do Garmin (tokens DI, renováveis) ----------------
+   Os tokens vêm de tools/garmin-tokens.py: { di_token, di_refresh_token, di_client_id }.
+   Ficam no secret GARMIN_TOKENS (semente) e, a cada renovação, são guardados no KV
+   GARMIN_KV, porque o Garmin pode trocar o refresh_token a cada uso. */
+const DI_TOKEN_URL = 'https://diauth.garmin.com/di-oauth2-service/oauth/token';
+const API = 'https://connectapi.garmin.com';
+const NATIVE = {
+  'User-Agent': 'GCM-Android-5.23',
+  'X-Garmin-User-Agent': 'com.garmin.android.apps.connectmobile/5.23; ; Google/sdk_gphone64_arm64/google; Android/33; Dalvik/2.1.0',
+  'X-Garmin-Paired-App-Version': '10861',
+  'X-Garmin-Client-Platform': 'Android',
+  'X-App-Ver': '10861',
+  'X-Lang': 'en',
+  'X-GCExperience': 'GC5',
+  'Accept-Language': 'en-US,en;q=0.9',
+};
+let tokens = null; // cache em memória
+let displayName = null;
 
-async function oauth1Header(method, url, consumer, token, tokenSecret) {
-  const u = new URL(url);
-  const params = {
-    oauth_consumer_key: consumer.consumer_key,
-    oauth_nonce: crypto.randomUUID().replace(/-/g, ''),
-    oauth_signature_method: 'HMAC-SHA1',
-    oauth_timestamp: String(Math.floor(Date.now() / 1000)),
-    oauth_token: token,
-    oauth_version: '1.0',
-  };
-  const all = { ...params };
-  u.searchParams.forEach((v, k) => { all[k] = v; });
-  const norm = Object.keys(all).sort().map((k) => enc(k) + '=' + enc(all[k])).join('&');
-  const base = [method, enc(u.origin + u.pathname), enc(norm)].join('&');
-  const key = await crypto.subtle.importKey(
-    'raw', te.encode(enc(consumer.consumer_secret) + '&' + enc(tokenSecret)), { name: 'HMAC', hash: 'SHA-1' }, false, ['sign']
-  );
-  const sig = new Uint8Array(await crypto.subtle.sign('HMAC', key, te.encode(base)));
-  params.oauth_signature = btoa(String.fromCharCode(...sig));
-  return 'OAuth ' + Object.keys(params).sort().map((k) => `${enc(k)}="${enc(params[k])}"`).join(', ');
+function jwtExp(t) {
+  try { return JSON.parse(td.decode(b64uToBytes(t.split('.')[1]))).exp * 1000; } catch { return 0; }
 }
 
-const UA = 'com.garmin.android.apps.connectmobile';
-let session = { bearer: null, exp: 0, name: null };
+async function carregarTokens(env) {
+  if (tokens) return tokens;
+  let salvo = null;
+  if (env.GARMIN_KV) { try { salvo = JSON.parse(await env.GARMIN_KV.get('tokens')); } catch { salvo = null; } }
+  if (!salvo) {
+    if (!env.GARMIN_TOKENS) throw new Error('GARMIN_TOKENS não configurado');
+    salvo = JSON.parse(env.GARMIN_TOKENS);
+  }
+  tokens = salvo;
+  return tokens;
+}
 
-async function garminSession(env) {
-  if (session.bearer && Date.now() < session.exp - 60e3) return session;
-  if (!env.GARMIN_OAUTH1) throw new Error('GARMIN_OAUTH1 não configurado');
-  const o1 = JSON.parse(env.GARMIN_OAUTH1);
-  const consumer = await (await fetch('https://thegarth.s3.amazonaws.com/oauth_consumer.json')).json();
-  const url = 'https://connectapi.garmin.com/oauth-service/oauth/exchange/user/2.0';
-  const auth = await oauth1Header('POST', url, consumer, o1.oauth_token, o1.oauth_token_secret);
-  const body = o1.mfa_token ? new URLSearchParams({ mfa_token: o1.mfa_token }) : new URLSearchParams();
-  const r = await fetch(url, {
+async function renovar(env) {
+  const t = await carregarTokens(env);
+  if (!t.di_refresh_token || !t.di_client_id) throw new Error('sem refresh token: gere os tokens de novo');
+  const r = await fetch(DI_TOKEN_URL, {
     method: 'POST',
-    headers: { Authorization: auth, 'User-Agent': UA, 'Content-Type': 'application/x-www-form-urlencoded' },
-    body,
+    headers: {
+      ...NATIVE,
+      Authorization: 'Basic ' + btoa(t.di_client_id + ':'),
+      Accept: 'application/json',
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Cache-Control': 'no-cache',
+    },
+    body: new URLSearchParams({ grant_type: 'refresh_token', client_id: t.di_client_id, refresh_token: t.di_refresh_token }),
   });
-  if (!r.ok) throw new Error('troca de token falhou (' + r.status + '): gere os tokens de novo');
-  const t = await r.json();
-  session = { bearer: t.access_token, exp: Date.now() + (t.expires_in || 3600) * 1000, name: session.name };
-  return session;
+  if (!r.ok) { tokens = null; throw new Error('renovação do token falhou (' + r.status + '): gere os tokens de novo'); }
+  const j = await r.json();
+  tokens = {
+    di_token: j.access_token,
+    di_refresh_token: j.refresh_token || t.di_refresh_token,
+    di_client_id: t.di_client_id,
+  };
+  if (env.GARMIN_KV) await env.GARMIN_KV.put('tokens', JSON.stringify(tokens));
+  return tokens;
 }
 
-async function garminGet(env, path) {
-  const s = await garminSession(env);
-  const r = await fetch('https://connectapi.garmin.com' + path, {
-    headers: { Authorization: 'Bearer ' + s.bearer, 'User-Agent': UA },
-  });
-  if (r.status === 401) { session.bearer = null; }
+async function garminGet(env, path, tentou) {
+  let t = await carregarTokens(env);
+  if (!t.di_token || jwtExp(t.di_token) < Date.now() + 15 * 60e3) t = await renovar(env);
+  const r = await fetch(API + path, { headers: { ...NATIVE, Authorization: 'Bearer ' + t.di_token, Accept: 'application/json' } });
+  if (r.status === 401 && !tentou) { await renovar(env); return garminGet(env, path, true); }
   if (!r.ok) throw new Error('garmin ' + r.status);
   return r.json();
 }
@@ -135,14 +147,13 @@ async function handleSono(env, url) {
   for (let d = new Date(from + 'T12:00:00Z'); d <= new Date(to + 'T12:00:00Z') && dias.length < 14; d.setUTCDate(d.getUTCDate() + 1)) {
     dias.push(d.toISOString().slice(0, 10));
   }
-  const s = await garminSession(env);
-  if (!s.name) {
+  if (!displayName) {
     const perfil = await garminGet(env, '/userprofile-service/socialProfile');
-    session.name = perfil.displayName;
+    displayName = perfil.displayName;
   }
   const noites = await Promise.all(dias.map(async (dia) => {
     try {
-      const raw = await garminGet(env, `/wellness-service/wellness/dailySleepData/${session.name}?date=${dia}&nonSleepBufferMinutes=60`);
+      const raw = await garminGet(env, `/wellness-service/wellness/dailySleepData/${displayName}?date=${dia}&nonSleepBufferMinutes=60`);
       return resumirNoite(dia, raw);
     } catch { return null; }
   }));
