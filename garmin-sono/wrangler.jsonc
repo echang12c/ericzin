@@ -1,0 +1,10 @@
+{
+  "name": "garmin-sono",
+  "main": "src/index.js",
+  "compatibility_date": "2026-07-01",
+  "vars": {
+    "FIREBASE_PROJECT_ID": "ericzinlifeplan",
+    "ALLOWED_EMAIL": "ericchang12c@gmail.com"
+  },
+  "observability": { "enabled": true }
+}
