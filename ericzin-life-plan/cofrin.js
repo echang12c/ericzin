@@ -3448,4 +3448,9 @@ window.cofrinOnShow = function(){
   temaGraficos();
   Object.values(state.charts || {}).forEach(c => { if (c && c.resize) { c.update('none'); c.resize(); } });
 };
+/* as abas do cofrin viraram itens do menu do LifePlan: ele escolhe a aba por aqui */
+window.cofrinAbrirAba = function(tab){
+  const b = document.querySelector('nav.tabs button[data-tab="' + tab + '"]');
+  if (b) b.click();
+};
 })();

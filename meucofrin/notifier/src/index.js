@@ -19,6 +19,9 @@ function json(obj, status = 200) {
   });
 }
 
+/* As notificações abrem o Life Plan (a seção Meu Cofrin mora lá), não o app seucofrin. */
+const LIFEPLAN_URL = 'https://ericzin.pages.dev/';
+
 /* ---------------- base64url ---------------- */
 export function b64uToBytes(s) {
   s = s.replace(/-/g, '+').replace(/_/g, '/');
@@ -297,7 +300,7 @@ async function processUser(env, key, now) {
           title: '⏰ Hora da meta!',
           body: r.texto,
           tag: 'meta-' + r.id,
-          url: './',
+          url: LIFEPLAN_URL + '#cofrin/metas',
         });
         console.log(`push "${r.texto.slice(0, 30)}" ${hhmm} → HTTP ${st}`);
         if (st === 404 || st === 410) { delete subs[id]; mudou = true; } // inscrição expirada
@@ -412,7 +415,7 @@ export default {
         results.push(await sendPush(env, sub, {
           title: '🔔 Teste do SeuCofrin',
           body: 'As notificações estão funcionando! 🎉',
-          url: './',
+          url: LIFEPLAN_URL + '#cofrin',
         }).catch(() => 0));
       }
       return json({ ok: true, results });

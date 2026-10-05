@@ -154,6 +154,9 @@
   .nav-item:hover{ background:rgba(255,255,255,.08); color:#fff; transform:translateX(2px); }
   .nav-item.active{ background:var(--primary); color:var(--on-accent); box-shadow:0 4px 12px -2px rgba(169,156,245,.5); }
   .nav-item.active .ico{ color:var(--on-accent); }
+  .nav-item .nav-short{ display:none; }
+  .nav-item.cf-sub{ padding:8px 12px 8px 22px; font-size:13px; }
+  .nav-item.cf-sub .ico{ width:19px; font-size:15px; line-height:19px; justify-content:center; }
 
   .sidebar-bottom{ margin-top:auto; }
   .account-row{ padding-top:14px; margin-bottom:12px; border-top:1px solid rgba(255,255,255,.12); display:flex; align-items:center; gap:10px; }
@@ -353,20 +356,32 @@
   /* Celular: a sidebar vira uma barra de abas fixa embaixo, e o conteúdo usa a largura toda.
      A conta (foto + Sair) aparece no fim da Visão geral (.m-account). */
   @media (max-width: 640px){
-    :root{ --sidebar-w:0px; --tabbar-h:60px; }
+    :root{ --sidebar-w:0px; --tabbar-h:68px; }
     .sidebar{
       top:auto; bottom:0; left:0; right:0; width:100%; height:auto;
-      flex-direction:row; align-items:center; gap:2px;
-      padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));
-      overflow:visible; border-top:1px solid rgba(255,255,255,.08);
+      flex-direction:row; align-items:stretch; gap:4px;
+      padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));
+      overflow-x:auto; overflow-y:hidden; overscroll-behavior-x:contain;
+      scroll-snap-type:x proximity; scrollbar-width:none;
+      border-top:1px solid rgba(255,255,255,.08);
       box-shadow:0 -10px 24px -14px rgba(0,0,0,.5);
     }
+    .sidebar::-webkit-scrollbar{ display:none; }
     .sidebar::before, .brand, .nav-label, .sidebar-bottom{ display:none; }
     .nav{ display:contents; }
-    .nav-item{ flex:1 1 0; min-width:0; height:48px; justify-content:center; padding:0; border-radius:14px; }
+    /* cada seção é um botão com ícone + nome, largo o bastante para o dedo */
+    .nav-item, .nav-item.cf-sub{
+      flex:1 0 66px; min-width:66px; max-width:96px; height:52px; padding:4px 2px;
+      flex-direction:column; justify-content:center; align-items:center; gap:3px;
+      border-radius:14px; scroll-snap-align:center; font-size:10.5px; text-align:center;
+    }
     .nav-item:hover{ transform:none; }
-    .nav-item .ico{ width:21px; height:21px; }
+    .nav-item .ico, .nav-item.cf-sub .ico{ width:22px; height:22px; font-size:18px; line-height:22px; justify-content:center; }
     .nav-item .nav-text{ display:none; }
+    .nav-item .nav-short{ display:block; max-width:100%; font-size:10.5px; line-height:1.1; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    /* dentro do Cofrin a barra mostra só ele (+ Início para voltar); fora, só o atalho */
+    .sidebar.in-cofrin #navPillars, .sidebar.in-cofrin .cf-main{ display:none; }
+    .sidebar:not(.in-cofrin) .cf-sub{ display:none; }
 
     .main{ padding:1.25rem 16px calc(var(--tabbar-h) + 28px + env(safe-area-inset-bottom,0px)); }
     .page-head{ margin-bottom:1.1rem; }
@@ -1123,8 +1138,8 @@
 
   /* color = brand purple used in the sidebar/overview. accent = the pillar's own color, used only inside its detail page. */
   var PILLARS = [
-    { id:'saude',    icon:'saude',    name:'Saúde & Corpo',    color:'#a99cf5', accent:'#6fcfa8', custom:true },
-    { id:'sono',     icon:'sono',     name:'Sono & Descanso',  color:'#8f80ee', accent:'#f4b184', custom:true },
+    { id:'saude',    icon:'saude',    name:'Saúde & Corpo',   short:'Saúde',    color:'#a99cf5', accent:'#6fcfa8', custom:true },
+    { id:'sono',     icon:'sono',     name:'Sono & Descanso', short:'Sono',  color:'#8f80ee', accent:'#f4b184', custom:true },
     { id:'mente',    icon:'mente',    name:'Mente',            color:'#a99cf5', accent:'#b0a2f5', custom:true },
     { id:'leitura',  icon:'leitura',  name:'Estudo',           color:'#8f80ee', accent:'#ecca78', custom:true },
     { id:'financas', icon:'financas', name:'Finanças',         color:'#a99cf5', accent:'#eb98b4', custom:true },
@@ -2203,10 +2218,28 @@
   }
 
   /* ---------- routing / sidebar ---------- */
-  var state = { page: loadPage() };
+  var CF_TABS = [
+    { id:'dash',    ico:'📊', name:'Dashboard',       short:'Painel' },
+    { id:'tx',      ico:'💸', name:'Lançamentos',     short:'Lançam.' },
+    { id:'relat',   ico:'📈', name:'Relatórios',      short:'Relatórios' },
+    { id:'mercado', ico:'🛒', name:'Mercado',         short:'Mercado' },
+    { id:'contas',  ico:'🏠', name:'Contas da casa',  short:'Contas' },
+    { id:'metas',   ico:'✅', name:'Metas do dia',    short:'Metas' },
+    { id:'pets',    ico:'🐾', name:'Coleção',         short:'Coleção' },
+    { id:'admin',   ico:'🛠️', name:'Admin',           short:'Admin' }
+  ];
+  function cfTabValid(t){ return CF_TABS.some(function(x){ return x.id === t; }); }
+  function loadCfTab(){
+    try{ var t = localStorage.getItem('lp_cofrin_tab'); return cfTabValid(t) ? t : 'dash'; }catch(e){ return 'dash'; }
+  }
+  /* link da notificação: #cofrin/metas abre direto na aba Metas do dia */
+  var hashPage = (location.hash.match(/^#cofrin(?:\/(\w+))?$/) || null);
+  var state = { page: hashPage ? 'cofrin' : loadPage(), cfTab: hashPage && cfTabValid(hashPage[1]) ? hashPage[1] : loadCfTab() };
+  if(hashPage){ savePage('cofrin'); try{ history.replaceState(null, '', location.pathname + location.search); }catch(e){} }
 
-  function navigate(page){
+  function navigate(page, cfTab){
     state.page = page;
+    if(cfTab){ state.cfTab = cfTab; try{ localStorage.setItem('lp_cofrin_tab', cfTab); }catch(e){} }
     savePage(page);
     render();
     window.scrollTo({ top:0, behavior:'smooth' });
@@ -2221,7 +2254,7 @@
     var ovBtn = document.createElement('button');
     ovBtn.className = 'nav-item' + (state.page === 'overview' ? ' active' : '');
     ovBtn.title = 'Visão geral';
-    ovBtn.innerHTML = '<span class="ico">' + ICONS.overview + '</span><span class="nav-text">Visão geral</span>';
+    ovBtn.innerHTML = '<span class="ico">' + ICONS.overview + '</span><span class="nav-text">Visão geral</span><span class="nav-short">Início</span>';
     ovBtn.onclick = function(){ navigate('overview'); };
     navOverview.appendChild(ovBtn);
 
@@ -2229,7 +2262,7 @@
       var btn = document.createElement('button');
       btn.className = 'nav-item' + (state.page === p.id ? ' active' : '');
       btn.title = p.name;
-      btn.innerHTML = '<span class="ico" style="color:' + p.color + '">' + ICONS[p.icon] + '</span><span class="nav-text">' + p.name + '</span>';
+      btn.innerHTML = '<span class="ico" style="color:' + p.color + '">' + ICONS[p.icon] + '</span><span class="nav-text">' + p.name + '</span><span class="nav-short">' + (p.short || p.name) + '</span>';
       btn.onclick = function(){ navigate(p.id); };
       navPillars.appendChild(btn);
     });
@@ -2238,11 +2271,27 @@
     navApps.innerHTML = '';
     var cfBtn = document.createElement('button');
     var cfActive = state.page === 'cofrin';
-    cfBtn.className = 'nav-item' + (cfActive ? ' active' : '');
+    document.querySelector('.sidebar').classList.toggle('in-cofrin', cfActive);
+    cfBtn.className = 'nav-item cf-main' + (cfActive ? ' active' : '');
     cfBtn.title = 'Meu Cofrin';
-    cfBtn.innerHTML = '<span class="ico"' + (cfActive ? '' : ' style="color:#a99cf5"') + '>' + ICONS.cofrin + '</span><span class="nav-text">Meu Cofrin</span>';
+    cfBtn.innerHTML = '<span class="ico"' + (cfActive ? '' : ' style="color:#a99cf5"') + '>' + ICONS.cofrin + '</span><span class="nav-text">Meu Cofrin</span><span class="nav-short">Cofrin</span>';
     cfBtn.onclick = function(){ navigate('cofrin'); };
     navApps.appendChild(cfBtn);
+
+    /* as abas do Cofrin moram aqui no menu do LifePlan */
+    var adminBtn = document.getElementById('tabAdminBtn');
+    CF_TABS.forEach(function(t){
+      if(t.id === 'admin' && (!adminBtn || adminBtn.classList.contains('hidden'))) return;
+      var b = document.createElement('button');
+      b.className = 'nav-item cf-sub' + (cfActive && state.cfTab === t.id ? ' active' : '');
+      b.title = t.name;
+      b.innerHTML = '<span class="ico">' + t.ico + '</span><span class="nav-text">' + t.name + '</span><span class="nav-short">' + t.short + '</span>';
+      b.onclick = function(){ navigate('cofrin', t.id); };
+      navApps.appendChild(b);
+    });
+    /* mantém o item ativo à vista na barra rolável do celular */
+    var act = document.querySelector('.sidebar .nav-item.active');
+    if(act && act.scrollIntoView) act.scrollIntoView({ block:'nearest', inline:'center' });
   }
 
   /* Meu Cofrin mora num contêiner próprio (#cofrin), fora do #main: o render das
@@ -2251,8 +2300,14 @@
     document.getElementById('main').hidden = on;
     var cf = document.getElementById('cofrin');
     if(cf) cf.hidden = !on;
+    if(on && window.cofrinAbrirAba) window.cofrinAbrirAba(state.cfTab);
     if(on && window.cofrinOnShow) window.cofrinOnShow();
   }
+  /* o cofrin.js carrega depois deste script; quando chega, reaplica a aba */
+  window.lifeplanCofrinPronto = function(){ if(state.page === 'cofrin') showCofrin(true); };
+  /* a aba Admin só aparece depois que o cofrin confirma o usuário */
+  var adminTab = document.getElementById('tabAdminBtn');
+  if(adminTab && window.MutationObserver) new MutationObserver(function(){ buildSidebar(); }).observe(adminTab, { attributes:true, attributeFilter:['class'] });
 
   function renderPillarOrOverview(){
     if(state.page === 'overview'){ renderOverview(); return; }
@@ -2281,9 +2336,18 @@
     updateSidebarFooter();
   }
 
+  /* notificação clicada com o app já aberto: só o hash muda */
+  window.addEventListener('hashchange', function(){
+    var m = location.hash.match(/^#cofrin(?:\/(\w+))?$/);
+    if(!m) return;
+    navigate('cofrin', cfTabValid(m[1]) ? m[1] : state.cfTab);
+    try{ history.replaceState(null, '', location.pathname + location.search); }catch(e){}
+  });
+
   if(cloudConfigured()){ bootCloud(); } else { render(); }
 })();
 </script>
 <script src="cofrin.js"></script>
+<script>if(window.lifeplanCofrinPronto) window.lifeplanCofrinPronto();</script>
 </body>
 </html>

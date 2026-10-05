@@ -91,6 +91,7 @@ css += `
 .cfTitle small{display:block;font-family:var(--body);font-size:13px;font-weight:600;color:var(--muted);margin-top:2px}
 .monthBar button,.diaBar button.nav{color:var(--ink)}
 input,select,textarea{color:inherit}
+.tabsMenu{display:none}
 `;
 
 // @keyframes ficam fora do escopo
@@ -197,6 +198,11 @@ ${js}
 window.cofrinOnShow = function(){
   temaGraficos();
   Object.values(state.charts || {}).forEach(c => { if (c && c.resize) { c.update('none'); c.resize(); } });
+};
+/* as abas do cofrin viraram itens do menu do LifePlan: ele escolhe a aba por aqui */
+window.cofrinAbrirAba = function(tab){
+  const b = document.querySelector('nav.tabs button[data-tab="' + tab + '"]');
+  if (b) b.click();
 };
 })();
 `;

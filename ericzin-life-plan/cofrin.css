@@ -379,6 +379,7 @@
 #cofrin .cfTitle small{display:block;font-family:var(--body);font-size:13px;font-weight:600;color:var(--muted);margin-top:2px}
 #cofrin .monthBar button,#cofrin .diaBar button.nav{color:var(--ink)}
 #cofrin input,#cofrin select,#cofrin textarea{color:inherit}
+#cofrin .tabsMenu{display:none}
 
 @keyframes bauFloat{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-6px) rotate(4deg)}}
 @keyframes bauShake{0%,100%{transform:rotate(-8deg) scale(1)}50%{transform:rotate(8deg) scale(1.1)}}
