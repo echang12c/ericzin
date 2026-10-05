@@ -3,6 +3,8 @@
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
 
+const LIFEPLAN = './#cofrin/metas';
+
 /* Web Push: mostra a notificação enviada pelo worker cofre-notifier */
 self.addEventListener('push', e => {
   let data = {};
@@ -13,16 +15,22 @@ self.addEventListener('push', e => {
     tag: data.tag || undefined,
     icon: 'cofrin-icon.png',
     badge: 'cofrin-icon.png',
-    data: { url: './' },
+    data: { url: data.url || LIFEPLAN },
   }));
 });
 
 self.addEventListener('notificationclick', e => {
   e.notification.close();
+  const alvo = new URL((e.notification.data && e.notification.data.url) || LIFEPLAN, self.registration.scope).href;
   e.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
-      for (const c of list) if ('focus' in c) return c.focus();
-      return clients.openWindow('./');
+      // reaproveita uma janela já aberta no destino; senão abre o Life Plan
+      for (const c of list) {
+        if (new URL(c.url).origin === new URL(alvo).origin && 'focus' in c) {
+          return c.focus().then(w => (w && 'navigate' in w) ? w.navigate(alvo) : w);
+        }
+      }
+      return clients.openWindow(alvo);
     })
   );
 });

@@ -52,7 +52,15 @@ seucofrin.pages.dev) fundido aqui dentro com a paleta do LifePlan.
 - **Container:** o cofrin mora em `#cofrin`, irmão do `#main`, porque o render das
   outras páginas reescreve o `#main` inteiro. `showCofrin()` só alterna qual dos
   dois aparece.
-- **Push das metas:** `cofrin-sw.js` só trata push (sem cache, de propósito).
+- **Abas no menu do LifePlan:** o menu de abas do cofrin fica escondido; Dashboard,
+  Lançamentos, Relatórios, Mercado, Contas da casa, Metas do dia, Coleção (e Admin)
+  são itens do grupo *Casa* da sidebar (no celular, a barra de baixo troca para elas
+  quando você está no Cofrin). O LifePlan escolhe a aba via `window.cofrinAbrirAba`.
+  Link direto: `/#cofrin/metas` (qualquer id de aba).
+- **Notificação das metas:** o worker manda `https://ericzin.pages.dev/#cofrin/metas`, então
+  ela abre o LifePlan mesmo quando o aparelho foi inscrito pelo seucofrin
+  (precisa publicar o `notifier` à mão).
+- **Push das metas (service worker):** `cofrin-sw.js` só trata push (sem cache, de propósito).
 - **Domínio novo:** ao publicar em outra URL, autorize-a no Firebase
   **moneyericana** (Authentication → Settings → Authorized domains) e na chave
   reCAPTCHA do App Check dele. Sem isso a seção Meu Cofrin não consegue ler os dados.
