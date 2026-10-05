@@ -155,6 +155,16 @@
   .nav-item.active{ background:var(--primary); color:var(--on-accent); box-shadow:0 4px 12px -2px rgba(169,156,245,.5); }
   .nav-item.active .ico{ color:var(--on-accent); }
   .nav-item .nav-short{ display:none; }
+  .m-top{ display:none; }
+  /* duas famílias pastel que se complementam: lilás (Life Plan) e menta (Cofrin) */
+  .m-top{ --lp-bg:#ece8ff; --lp-ink:#4a3bb8; --cf-bg:#dcf5ea; --cf-ink:#0b6b45; --sec-bg:var(--lp-bg); --sec-ink:var(--lp-ink); }
+  .m-top.cf{ --sec-bg:var(--cf-bg); --sec-ink:var(--cf-ink); }
+  .m-top .m-group.lp{ --sec-bg:var(--lp-bg); --sec-ink:var(--lp-ink); }
+  .m-top .m-group.cf{ --sec-bg:var(--cf-bg); --sec-ink:var(--cf-ink); }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]) .m-top{ --lp-bg:#2e2760; --lp-ink:#d9d2fb; --cf-bg:#123527; --cf-ink:#8ff0bd; }
+  }
+  :root[data-theme="dark"] .m-top{ --lp-bg:#2e2760; --lp-ink:#d9d2fb; --cf-bg:#123527; --cf-ink:#8ff0bd; }
   .nav-item.cf-sub{ padding:8px 12px 8px 22px; font-size:13px; }
   .nav-item.cf-sub .ico{ width:19px; font-size:15px; line-height:19px; justify-content:center; }
 
@@ -356,34 +366,48 @@
   /* Celular: a sidebar vira uma barra de abas fixa embaixo, e o conteúdo usa a largura toda.
      A conta (foto + Sair) aparece no fim da Visão geral (.m-account). */
   @media (max-width: 640px){
-    :root{ --sidebar-w:0px; --tabbar-h:68px; }
-    .sidebar{
-      top:auto; bottom:0; left:0; right:0; width:100%; height:auto;
-      flex-direction:row; align-items:stretch; gap:4px;
-      padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));
-      overflow-x:auto; overflow-y:hidden; overscroll-behavior-x:contain;
-      scroll-snap-type:x proximity; scrollbar-width:none;
-      border-top:1px solid rgba(255,255,255,.08);
-      box-shadow:0 -10px 24px -14px rgba(0,0,0,.5);
-    }
-    .sidebar::-webkit-scrollbar{ display:none; }
-    .sidebar::before, .brand, .nav-label, .sidebar-bottom{ display:none; }
-    .nav{ display:contents; }
-    /* cada seção é um botão com ícone + nome, largo o bastante para o dedo */
-    .nav-item, .nav-item.cf-sub{
-      flex:1 0 66px; min-width:66px; max-width:96px; height:52px; padding:4px 2px;
-      flex-direction:column; justify-content:center; align-items:center; gap:3px;
-      border-radius:14px; scroll-snap-align:center; font-size:10.5px; text-align:center;
-    }
-    .nav-item:hover{ transform:none; }
-    .nav-item .ico, .nav-item.cf-sub .ico{ width:22px; height:22px; font-size:18px; line-height:22px; justify-content:center; }
-    .nav-item .nav-text{ display:none; }
-    .nav-item .nav-short{ display:block; max-width:100%; font-size:10.5px; line-height:1.1; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    /* dentro do Cofrin a barra mostra só ele (+ Início para voltar); fora, só o atalho */
-    .sidebar.in-cofrin #navPillars, .sidebar.in-cofrin .cf-main{ display:none; }
-    .sidebar:not(.in-cofrin) .cf-sub{ display:none; }
+    :root{ --sidebar-w:0px; --tabbar-h:0px; }
+    .sidebar{ display:none; }
 
-    .main{ padding:1.25rem 16px calc(var(--tabbar-h) + 28px + env(safe-area-inset-bottom,0px)); }
+    /* Menu de seções no topo: o botão mostra onde você está; ao abrir, lista Life Plan e Cofrin */
+    .m-top{
+      display:block; position:sticky; top:0; z-index:30; background:var(--bg);
+      padding:calc(8px + env(safe-area-inset-top,0px)) 14px 8px; border-bottom:1px solid var(--border);
+    }
+    .m-top-btn{
+      width:100%; height:44px; display:flex; align-items:center; gap:10px; padding:0 14px;
+      border:1px solid transparent; border-radius:14px; cursor:pointer;
+      background:var(--sec-bg); color:var(--sec-ink); font:800 15px 'Nunito',sans-serif; text-align:left;
+    }
+    .m-top-btn .ico{ width:20px; height:20px; display:flex; flex:none; font-size:17px; line-height:20px; justify-content:center; }
+    .m-top-btn .ico svg{ width:100%; height:100%; stroke:currentColor; fill:none; stroke-width:2.1; stroke-linecap:round; stroke-linejoin:round; }
+    .m-top-btn .lbl{ flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .m-top-btn .grp{ font-size:11px; font-weight:800; opacity:.7; letter-spacing:.04em; text-transform:uppercase; }
+    .m-top-btn .chev{ font-size:11px; transition:transform .2s; }
+    .m-top.open .m-top-btn .chev{ transform:rotate(180deg); }
+    .m-panel{
+      position:absolute; left:10px; right:10px; top:calc(100% - 2px); max-height:calc(100dvh - 90px); overflow-y:auto;
+      background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:10px;
+      box-shadow:0 18px 40px -12px rgba(17,24,39,.35); display:none;
+    }
+    .m-top.open .m-panel{ display:block; }
+    .m-group{ border-radius:14px; padding:10px; background:var(--sec-bg); }
+    .m-group + .m-group{ margin-top:10px; }
+    .m-group-title{ font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--sec-ink); opacity:.75; padding:0 4px 8px; }
+    .m-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .m-item{
+      display:flex; align-items:center; gap:9px; min-height:46px; padding:8px 10px; border-radius:12px; cursor:pointer;
+      background:var(--surface); border:1px solid var(--border); color:var(--text); font:700 13.5px 'Nunito',sans-serif; text-align:left;
+    }
+    .m-item .ico{ width:20px; height:20px; display:flex; flex:none; font-size:16px; line-height:20px; justify-content:center; color:var(--sec-ink); }
+    .m-item .ico svg{ width:100%; height:100%; stroke:currentColor; fill:none; stroke-width:2.1; stroke-linecap:round; stroke-linejoin:round; }
+    .m-item.active{ background:var(--sec-ink); border-color:var(--sec-ink); color:var(--sec-bg); }
+    .m-item.active .ico{ color:var(--sec-bg); }
+    .m-backdrop{ position:fixed; inset:0; z-index:-1; background:rgba(17,24,39,.35); display:none; }
+    .m-top.open .m-backdrop{ display:block; }
+    #cofrin header.cfHeader{ top:calc(60px + env(safe-area-inset-top,0px)); }
+
+    .main{ padding:1.25rem 16px calc(28px + env(safe-area-inset-bottom,0px)); }
     .page-head{ margin-bottom:1.1rem; }
     .page-head h1{ font-size:25px; }
     .hero-card{ padding:1.15rem 1.25rem; margin-bottom:1.25rem; gap:1rem; }
@@ -417,6 +441,11 @@
 <body>
 
 <div class="app">
+  <header class="m-top" id="mTop">
+    <div class="m-backdrop" id="mBackdrop"></div>
+    <button type="button" class="m-top-btn" id="mTopBtn" aria-expanded="false" aria-controls="mPanel"></button>
+    <div class="m-panel" id="mPanel"></div>
+  </header>
   <aside class="sidebar">
     <div class="brand">
       <svg class="brand-mark" viewBox="0 0 40 40">
@@ -2289,10 +2318,64 @@
       b.onclick = function(){ navigate('cofrin', t.id); };
       navApps.appendChild(b);
     });
-    /* mantém o item ativo à vista na barra rolável do celular */
-    var act = document.querySelector('.sidebar .nav-item.active');
-    if(act && act.scrollIntoView) act.scrollIntoView({ block:'nearest', inline:'center' });
+    buildMobileMenu();
   }
+
+  /* Menu do celular (topo): o botão mostra a seção atual, o painel lista as do Life Plan e as do Cofrin */
+  function buildMobileMenu(){
+    var top = document.getElementById('mTop'), btn = document.getElementById('mTopBtn'), panel = document.getElementById('mPanel');
+    if(!top) return;
+    var inCf = state.page === 'cofrin';
+    var curIco, curName;
+    if(inCf){
+      var t = CF_TABS.filter(function(x){ return x.id === state.cfTab; })[0] || CF_TABS[0];
+      curIco = t.ico; curName = t.name;
+    }else if(state.page === 'overview'){ curIco = ICONS.overview; curName = 'Visão geral'; }
+    else{
+      var pl = PILLARS.filter(function(x){ return x.id === state.page; })[0] || PILLARS[0];
+      curIco = ICONS[pl.icon]; curName = pl.name;
+    }
+    top.classList.toggle('cf', inCf);
+    btn.innerHTML = '<span class="ico">' + curIco + '</span><span class="lbl">' + curName + '</span><span class="grp">' + (inCf ? 'Cofrin' : 'Life Plan') + '</span><span class="chev">▼</span>';
+
+    function item(ico, name, active, go){
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'm-item' + (active ? ' active' : '');
+      b.innerHTML = '<span class="ico">' + ico + '</span><span>' + name + '</span>';
+      b.onclick = function(){ closeMobileMenu(); go(); };
+      return b;
+    }
+    function group(cls, title){
+      var g = document.createElement('div'); g.className = 'm-group ' + cls;
+      g.innerHTML = '<div class="m-group-title">' + title + '</div><div class="m-grid"></div>';
+      panel.appendChild(g); return g.lastChild;
+    }
+    panel.innerHTML = '';
+    var lp = group('lp', 'Life Plan');
+    lp.appendChild(item(ICONS.overview, 'Visão geral', state.page === 'overview', function(){ navigate('overview'); }));
+    PILLARS.forEach(function(p){
+      lp.appendChild(item(ICONS[p.icon], p.name, state.page === p.id, function(){ navigate(p.id); }));
+    });
+    var cf = group('cf', 'Meu Cofrin');
+    var adminBtn = document.getElementById('tabAdminBtn');
+    CF_TABS.forEach(function(t){
+      if(t.id === 'admin' && (!adminBtn || adminBtn.classList.contains('hidden'))) return;
+      cf.appendChild(item(t.ico, t.name, inCf && state.cfTab === t.id, function(){ navigate('cofrin', t.id); }));
+    });
+  }
+  function closeMobileMenu(){
+    var top = document.getElementById('mTop');
+    if(top){ top.classList.remove('open'); document.getElementById('mTopBtn').setAttribute('aria-expanded', 'false'); }
+  }
+  (function(){
+    var btn = document.getElementById('mTopBtn');
+    btn.onclick = function(){
+      var open = document.getElementById('mTop').classList.toggle('open');
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    };
+    document.getElementById('mBackdrop').onclick = closeMobileMenu;
+    document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeMobileMenu(); });
+  })();
 
   /* Meu Cofrin mora num contêiner próprio (#cofrin), fora do #main: o render das
      outras páginas reescreve o #main inteiro e apagaria o app. Aqui só alternamos qual aparece. */
