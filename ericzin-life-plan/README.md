@@ -63,6 +63,9 @@ seucofrin.pages.dev) fundido aqui dentro com a paleta do LifePlan.
   A aba Mercado ganhou período rápido e gráficos próprios (gasto por mês, dia da semana, lojas lado a
   lado, inflação do carrinho). Tudo isso vive em `meucofrin/index.html`; é só rodar o sincronizador.
   Da Finanças dá para abrir o Raio-X direto (`window.lpCofrinTab`).
+- **Metas de gasto:** limite mensal por categoria + meta de poupança, em `users/{uid}/config/orcamento`
+  (`{limites:{categoria:centavos}, poupanca:%}`). **Precisa publicar o `meucofrin/firestore.rules` no
+  console do Firebase `moneyericana`** (Firestore → Regras), senão salvar as metas é negado.
 - **Notificação das metas:** o worker manda `https://ericzin.pages.dev/#cofrin/metas`, então
   ela abre o LifePlan mesmo quando o aparelho foi inscrito pelo seucofrin
   (precisa publicar o `notifier` à mão).

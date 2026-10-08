@@ -64,7 +64,7 @@ const state = {
   perfil: {},                   // {nome, foto} salvos no Firestore
   cats: null,                   // {despesa:[...], receita:[...]} — null = usa o padrão
   contas: [],                   // contas da casa: {id, nome, valor, dia?, pagamentos:{mes:centavosPago}}
-  unsubTx:null, unsubRotinas:null, unsubMetaStatus:null, unsubInv:null, unsubCampos:null, unsubPerfil:null, unsubCats:null, unsubContas:null, unsubPetsCfg:null,
+  unsubTx:null, unsubRotinas:null, unsubMetaStatus:null, unsubInv:null, unsubCampos:null, unsubPerfil:null, unsubCats:null, unsubOrc:null, orc:null, unsubContas:null, unsubPetsCfg:null,
   charts:{cat:null, trend:null, rel:null, relDonut:null, relLinha:null,
            mkProd:null, mkComp:null, mkMercado:null, mkTop:null, contas:null},
 };
@@ -233,6 +233,7 @@ function entrarNoApp(user){
   document.getElementById('appView').classList.remove('hidden');
   carregarMes();
   escutarCats();
+  escutarOrcamento();
   escutarContas();
   escutarRotinas();
   escutarDiaMetas();
@@ -258,7 +259,7 @@ auth.onAuthStateChanged(user=>{
     state.uid=null; state.perfil={}; catMap=null;
     clearInterval(verifyPoll); verifyPoll=null;
     document.getElementById('verifyMsg').textContent='';
-    if(state.unsubTx)state.unsubTx(); if(state.unsubCats)state.unsubCats();
+    if(state.unsubTx)state.unsubTx(); if(state.unsubCats)state.unsubCats(); if(state.unsubOrc)state.unsubOrc(); state.orc=null;
     if(state.unsubContas)state.unsubContas(); state.contas=[];
     if(state.unsubRotinas)state.unsubRotinas(); if(state.unsubMetaStatus)state.unsubMetaStatus(); if(state.unsubInv)state.unsubInv();
     if(state.unsubCampos)state.unsubCampos(); if(state.unsubPerfil)state.unsubPerfil();
@@ -383,6 +384,8 @@ function renderDash(){
       <span class="sub"><span>${(v/desp*100).toFixed(0)}% das despesas</span></span></button>`).join('');
     box.querySelectorAll('.rxRow').forEach(b=>b.onclick=()=>abrirRaioX(b.dataset.cat));
   }
+
+  dashMetas();
 
   // top 5 gastos
   const top=[...state.txs].filter(t=>t.tipo==='despesa').sort((a,b)=>b.valor-a.valor).slice(0,5);
@@ -870,6 +873,7 @@ async function rxRender(){
     rxLimpaGraficos('rx');
     corpo.innerHTML=[
       rxHeroHTML(rx.ctx),
+      rxMetasHTML(),
       rxMudouHTML(rx.ctx),
       rxRankingHTML(rx.ctx),
       rxPerfilHTML(rx.ctx),
@@ -888,6 +892,7 @@ async function rxRender(){
     rxGraficoSemana(rx.ctx);
     rxGraficoPoupanca(rx.ctx);
     rxPreparaRitmo(meu);
+    rxPreparaMetas(meu);
     rxLigaCalendario();
   }catch(ex){
     console.error('raiox:',ex);
@@ -1271,7 +1276,8 @@ function rxLigaEventos(){
 /* ---------- bottom sheet de filtros ---------- */
 const rxSheet=document.getElementById('rxSheet');
 function rxAbreSheet(tipo){
-  rx.draft={tipo, cats:[...rx.cats], pag:[...rx.pag], grp:[...rx.grp], de:rx.de||shiftMes(state.mes,-5), ate:rx.ate||state.mes};
+  rx.draft={tipo, cats:[...rx.cats], pag:[...rx.pag], grp:[...rx.grp], de:rx.de||shiftMes(state.mes,-5), ate:rx.ate||state.mes,
+    limites:Object.fromEntries(Object.entries(orcLimites()).map(([c,v])=>[c,cIn(v)])), poup:(state.orc&&state.orc.poupanca)||0};
   rxDesenhaSheet();
   rxSheet.classList.remove('hidden');
   document.body.style.overflow='hidden';
@@ -1293,6 +1299,10 @@ function rxDesenhaSheet(){
       <div class="rxChs">${RX_GRUPOS.map(g=>chip('grp',g.id,`${g.emoji} ${g.nome}`)).join('')}</div>
       <div class="rxSheetSub">Em qual perfil cada categoria entra?</div>
       ${catsD().map(c=>`<div class="rxMap"><span>${esc(c)}</span><div class="segment">${RX_GRUPOS.map(g=>`<button type="button" class="${rxGrupoDe(c)===g.id?'selInc':''}" data-map="${esc(c)}" data-gid="${g.id}" aria-label="${esc(c)}: ${g.nome}">${g.emoji}</button>`).join('')}</div></div>`).join('')}`;
+  }else if(d.tipo==='metas'){
+    T.textContent='Metas de gasto';
+    B.innerHTML=metasSheetHTML(d);
+    metasSheetLiga(d);
   }else{
     T.textContent='Escolher período';
     B.innerHTML=`<p class="rxSheetP">Meses inteiros, do primeiro ao último.</p>
@@ -1308,8 +1318,15 @@ function rxDesenhaSheet(){
     rx.gmap[b.dataset.map]=b.dataset.gid; rxSalvaGrupos(); rx.mapMudou=true; rxDesenhaSheet();
   });
 }
-document.getElementById('rxSheetOk').onclick=()=>{
+document.getElementById('rxSheetOk').onclick=async()=>{
   const d=rx.draft; if(!d) return;
+  if(d.tipo==='metas'){
+    const limites={};
+    Object.entries(d.limites).forEach(([c,v])=>{ const n=parseValor(v); if(n) limites[c]=n; });
+    try{ await metasSalvar(limites, d.poup); toast('Metas salvas 🎯'); }
+    catch(ex){ toast('Não consegui salvar: '+ex.message); return; }
+    rxFechaSheet(); return;
+  }
   if(d.tipo==='periodo'){
     const de=document.getElementById('rxDe').value, ate=document.getElementById('rxAte').value;
     rx.de=de||d.de; rx.ate=ate||d.ate; rx.per='custom';
@@ -1319,6 +1336,7 @@ document.getElementById('rxSheetOk').onclick=()=>{
 document.getElementById('rxSheetLimpa').onclick=()=>{
   const d=rx.draft; if(!d) return;
   if(d.tipo==='periodo'){ d.de=shiftMes(state.mes,-5); d.ate=state.mes; }
+  else if(d.tipo==='metas'){ Object.keys(d.limites).forEach(k=>d.limites[k]=''); d.poup=0; }
   else d[d.tipo]=[];
   rxDesenhaSheet();
 };
@@ -1333,11 +1351,159 @@ if(window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListene
   if(sec && !sec.classList.contains('hidden') && rx.ctx) rxRender();
 });
 
+
+/* ====================================================================
+   METAS DE GASTO — limite mensal por categoria + meta de poupança
+   Guardadas em users/{uid}/config/orcamento:
+     { limites: { "Restaurantes": 80000, ... }  // centavos por mês
+       poupanca: 20 }                            // % da renda a guardar
+   ==================================================================== */
+function escutarOrcamento(){
+  if(state.unsubOrc) state.unsubOrc();
+  state.unsubOrc = col('config').doc('orcamento').onSnapshot(doc=>{
+    state.orc = doc.exists ? doc.data() : null;
+    renderDash();
+    const sec=document.getElementById('tab-relat');
+    if(sec && !sec.classList.contains('hidden') && rx.ctx) rxRender();
+  });
+}
+const orcLimites=()=>(state.orc&&state.orc.limites)||{};
+const orcTem=()=>Object.keys(orcLimites()).length>0 || (state.orc&&state.orc.poupanca>0);
+/* situação de uma meta: leva em conta o ritmo do mês (quanto já "devia" ter gasto) */
+function metaStatus(gasto, limite, ref){
+  const ehAtual=ref===mesAtual();
+  const esperado = ehAtual ? new Date().getDate()/diasDoMes(ref) : 1;
+  const uso=limite>0 ? gasto/limite : 0;
+  if(gasto>limite) return {k:'estourou', cls:'ruim', ic:'⛔', txt:`passou ${fmtInt(gasto-limite)}`, uso, esperado};
+  if(ehAtual && uso>esperado+0.1 && esperado<1) return {k:'atencao', cls:'aviso', ic:'⚠️', txt:`acima do ritmo · restam ${fmtInt(limite-gasto)}`, uso, esperado};
+  return {k:'ok', cls:'bom', ic:'✅', txt:`restam ${fmtInt(limite-gasto)}`, uso, esperado};
+}
+function metasDoMes(txs, ref){
+  const gastoCat={}; let rec=0, desp=0;
+  txs.forEach(t=>{ if(t.mes!==ref) return;
+    if(t.tipo==='receita') rec+=t.valor; else { desp+=t.valor; gastoCat[t.cat]=(gastoCat[t.cat]||0)+t.valor; } });
+  const itens=Object.entries(orcLimites()).filter(([,l])=>l>0)
+    .map(([cat,lim])=>({cat,lim,gasto:gastoCat[cat]||0,st:metaStatus(gastoCat[cat]||0,lim,ref)}))
+    .sort((a,b)=>b.st.uso-a.st.uso);
+  return {itens, rec, desp};
+}
+function metaLinhaHTML(m, botao){
+  const w=Math.min(100,m.st.uso*100), pos=m.st.esperado<1?m.st.esperado*100:null;
+  return `<${botao?'button type="button" data-cat="'+esc(m.cat)+'"':'div'} class="rxMeta ${m.st.k}">
+    <span class="top"><span class="n"><i style="background:${rx.cor&&rx.cor[m.cat]!==undefined?rxCorCat(m.cat):vzCor(catsD().indexOf(m.cat))}"></i>${esc(m.cat)}</span>
+      <span class="v">${fmtInt(m.gasto)} <small>de ${fmtInt(m.lim)}</small></span></span>
+    <span class="b"><span style="width:${w}%"></span>${pos!==null?`<em style="left:${pos}%" title="onde você deveria estar hoje"></em>`:''}</span>
+    <span class="sub"><span class="rxDelta ${m.st.cls}">${m.st.ic} ${m.st.txt}</span></span>
+  </${botao?'button':'div'}>`;
+}
+function rxMetasHTML(){
+  if(!orcTem()) return rxCard('rxMetas','🎯 Metas de gasto',
+    'Defina quanto você quer gastar por mês em cada categoria e acompanhe aqui, com o ritmo do mês.',
+    '<button type="button" class="btnPrimary rxIr" data-sheet="metas">Definir minhas metas</button>');
+  return rxCard('rxMetas','🎯 Metas de '+esc(mesLabel(state.mes)),'<span id="rxMetasS">Carregando…</span>',
+    '<div class="rxRows" id="rxMetasBox"></div><div id="rxMetasHist"></div><button type="button" class="rxMais" data-sheet="metas">✏️ Editar metas</button>');
+}
+async function rxPreparaMetas(meu){
+  if(!orcTem() || !document.getElementById('rxMetasBox')) return;
+  const ref=state.mes;
+  const txs=await rxBusca(shiftMes(ref,-5),ref);
+  if(meu!==rx.seq) return;
+  const {itens,rec,desp}=metasDoMes(txs,ref);
+  const box=document.getElementById('rxMetasBox'); if(!box) return;
+  let html=itens.map(m=>metaLinhaHTML(m,true)).join('');
+  const meta=(state.orc&&state.orc.poupanca)||0;
+  let frasePoup='';
+  if(meta>0){
+    if(rec>0){
+      const taxa=(rec-desp)/rec*100, ok=taxa>=meta;
+      html+=`<div class="rxMeta ${ok?'ok':'atencao'} static"><span class="top"><span class="n">💰 Guardar ${meta}% da renda</span><span class="v">${Math.round(taxa)}% <small>agora</small></span></span>
+        <span class="b"><span style="width:${Math.max(0,Math.min(100,taxa/meta*100))}%"></span></span>
+        <span class="sub"><span class="rxDelta ${ok?'bom':'aviso'}">${ok?'✅ meta batida':`⚠️ faltam ${(meta-taxa).toFixed(0)} pontos`}</span></span></div>`;
+      frasePoup=ok?' Você está guardando mais do que a meta.':' A meta de poupança ainda não foi batida.';
+    }else html+=`<div class="rxMut" style="padding:8px 4px">💰 Meta de guardar ${meta}% da renda — lance a receita do mês para acompanhar.</div>`;
+  }
+  box.innerHTML=html||'<div class="empty">Sem metas definidas.</div>';
+  box.querySelectorAll('button.rxMeta').forEach(b=>b.onclick=()=>rxFiltraCat(b.dataset.cat));
+  const est=itens.filter(m=>m.st.k==='estourou'), aten=itens.filter(m=>m.st.k==='atencao');
+  const s=document.getElementById('rxMetasS');
+  if(s) s.innerHTML = !itens.length ? ('Só a meta de poupança está ativa.'+frasePoup)
+    : est.length ? `<b>${est.length}</b> de ${itens.length} meta${itens.length>1?'s':''} estourou${est.length>1?'aram':''}: <b>${esc(est[0].cat)}</b> passou ${fmtInt(est[0].gasto-est[0].lim)}.${frasePoup}`
+    : aten.length ? `Tudo dentro do limite, mas <b>${esc(aten[0].cat)}</b> está gastando mais rápido que o mês.${frasePoup}`
+    : `Todas as ${itens.length} metas no caminho. Continue assim 👏${frasePoup}`;
+  /* histórico: nos últimos meses, quantas metas foram cumpridas */
+  const hist=document.getElementById('rxMetasHist');
+  if(hist && itens.length){
+    const meses=mesesEntre(shiftMes(ref,-5),ref).filter(m=>txs.some(t=>t.mes===m && t.tipo==='despesa'));
+    const pontos=meses.map(m=>{ const r=metasDoMes(txs,m); const ok=r.itens.filter(x=>x.st.k!=='estourou').length;
+      return `<span class="rxHist ${ok===r.itens.length?'ok':'ruim'}" title="${ok} de ${r.itens.length}"><b>${ok===r.itens.length?'✓':ok+'/'+r.itens.length}</b>${mesCurto(m).split('/')[0]}</span>`; });
+    hist.innerHTML=`<div class="rxVarT">Metas cumpridas nos últimos meses</div><div class="rxHists">${pontos.join('')}</div>`;
+  }
+}
+/* o Resumo mostra as metas que mais pedem atenção */
+function dashMetas(){
+  const box=document.getElementById('dashMetas'); if(!box) return;
+  if(!orcTem()){
+    box.innerHTML='<button type="button" class="card cf-meta-cta" id="btnDefMetas"><span>🎯</span><span><b>Defina metas de gasto</b><small>Escolha um limite por categoria e acompanhe o ritmo do mês.</small></span></button>';
+    document.getElementById('btnDefMetas').onclick=()=>abrirRaioX(null,'metas');
+    return;
+  }
+  const {itens}=metasDoMes(state.txs, state.mes);
+  if(!itens.length){ box.innerHTML=''; return; }
+  const ruins=itens.filter(m=>m.st.k!=='ok').length;
+  box.innerHTML=`<h2 class="section">🎯 Suas metas${ruins?` <span class="rxDelta ${itens.some(m=>m.st.k==='estourou')?'ruim':'aviso'}">${ruins} pedem atenção</span>`:' <span class="rxDelta bom">tudo certo</span>'}</h2>
+    <div class="card"><div class="rxRows">${itens.slice(0,3).map(m=>metaLinhaHTML(m,true)).join('')}</div>
+    ${itens.length>3?`<button type="button" class="rxMais" id="btnMaisMetas">Ver todas no Raio-X</button>`:''}</div>`;
+  box.querySelectorAll('button.rxMeta').forEach(b=>b.onclick=()=>abrirRaioX(b.dataset.cat));
+  const mm=document.getElementById('btnMaisMetas'); if(mm) mm.onclick=()=>abrirRaioX();
+}
+/* sugestão: média dos 3 meses anteriores, com um corte maior no Prazer */
+async function metasSugestao(){
+  const ref=state.mes, txs=await rxBusca(shiftMes(ref,-3),shiftMes(ref,-1));
+  const meses=mesesEntre(shiftMes(ref,-3),shiftMes(ref,-1)).filter(m=>txs.some(t=>t.mes===m && t.tipo==='despesa'));
+  const n=meses.length||1, soma={};
+  txs.forEach(t=>{ if(t.tipo==='despesa') soma[t.cat]=(soma[t.cat]||0)+t.valor; });
+  const fator={ess:1,bem:.95,pra:.85}, out={};
+  Object.entries(soma).sort((a,b)=>b[1]-a[1]).slice(0,8).forEach(([c,v])=>{
+    const alvo=Math.round(v/n*fator[rxGrupoDe(c)]/1000)*1000; // arredonda em R$ 10
+    if(alvo>0) out[c]=alvo;
+  });
+  return out;
+}
+async function metasSalvar(limites, poup){
+  await col('config').doc('orcamento').set({limites, poupanca:poup});
+}
+function metasSheetHTML(d){
+  const cats=[...new Set([...catsD(), ...Object.keys(d.limites)])];
+  return `<p class="rxSheetP">Quanto você quer gastar, no máximo, por mês. Deixe em branco o que não quiser controlar.</p>
+    <button type="button" class="btnGhost" id="rxMetasSug" style="width:100%;margin-bottom:12px">💡 Sugerir pela minha média (com um corte no Prazer)</button>
+    <div class="rxSlider"><label for="rxPoupSl">Guardar <b id="rxPoupV">${d.poup>0?d.poup+'% da renda':'sem meta'}</b></label>
+      <input type="range" id="rxPoupSl" min="0" max="60" step="5" value="${d.poup}"></div>
+    <div class="rxSheetSub">Limite por categoria (R$ por mês)</div>
+    ${cats.map(c=>`<div class="rxMap"><span><i class="rxDot" style="background:${rxCorCat(c)}"></i>${esc(c)}</span>
+      <input class="rxLim" inputmode="decimal" placeholder="sem limite" data-cat="${esc(c)}" value="${esc(d.limites[c]||'')}" aria-label="Limite de ${esc(c)}"></div>`).join('')}`;
+}
+function metasSheetLiga(d){
+  const B=document.getElementById('rxSheetB');
+  B.querySelectorAll('.rxLim').forEach(i=>i.oninput=()=>{ d.limites[i.dataset.cat]=i.value; });
+  const sl=document.getElementById('rxPoupSl');
+  sl.oninput=()=>{ d.poup=+sl.value; document.getElementById('rxPoupV').textContent=d.poup>0?d.poup+'% da renda':'sem meta'; };
+  document.getElementById('rxMetasSug').onclick=async e=>{
+    e.target.disabled=true; e.target.textContent='Calculando…';
+    try{ const s=await metasSugestao();
+      Object.keys(d.limites).forEach(k=>d.limites[k]='');
+      Object.entries(s).forEach(([c,v])=>d.limites[c]=cIn(v));
+      if(!d.poup) d.poup=10;
+      rxDesenhaSheet();
+    }catch(ex){ toast('Não consegui calcular agora'); e.target.disabled=false; }
+  };
+}
+
 /* atalho do Resumo: abre o Raio-X já filtrado por uma categoria, no mês */
-function abrirRaioX(cat){
+function abrirRaioX(cat, sheet){
   if(cat){ rx.per='mes'; rx.cats=[cat]; rx.pag=[]; rx.grp=[]; rxSalva(); }
   if(window.lpCofrinTab) window.lpCofrinTab('relat');
   else document.querySelector('nav.tabs button[data-tab="relat"]').click();
+  if(sheet) setTimeout(()=>rxAbreSheet(sheet),150);
 }
 
 /* ====================================================================

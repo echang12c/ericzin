@@ -159,21 +159,34 @@ service cloud.firestore {
         allow read, delete: if souDono(uid);
       }
 
-      // ---------- Configurações (hoje só o doc "categorias") ----------
+      // ---------- Configurações (docs "categorias" e "orcamento") ----------
       // Wildcard + checagem do id: permite a query da coleção inteira
       // (exportação de dados e exclusão de conta) sem abrir escrita livre.
+      function cfgCategorias(d) {
+        return d.keys().hasAll(['despesa', 'receita'])
+            && d.keys().hasOnly(['despesa', 'receita'])
+            && d.despesa is list
+            && d.despesa.size() >= 1
+            && d.despesa.size() <= 60
+            && d.receita is list
+            && d.receita.size() >= 1
+            && d.receita.size() <= 60;
+      }
+      // metas de gasto: limites = {categoria: centavos por mês}; poupanca = % da renda a guardar
+      function cfgOrcamento(d) {
+        return d.keys().hasAll(['limites', 'poupanca'])
+            && d.keys().hasOnly(['limites', 'poupanca'])
+            && d.limites is map
+            && d.limites.size() <= 60
+            && d.poupanca is int
+            && d.poupanca >= 0
+            && d.poupanca <= 100;
+      }
       match /config/{doc} {
         allow read, delete: if souDono(uid);
         allow create, update: if souDono(uid)
-                      && doc == 'categorias'
-                      && request.resource.data.keys().hasAll(['despesa', 'receita'])
-                      && request.resource.data.keys().hasOnly(['despesa', 'receita'])
-                      && request.resource.data.despesa is list
-                      && request.resource.data.despesa.size() >= 1
-                      && request.resource.data.despesa.size() <= 60
-                      && request.resource.data.receita is list
-                      && request.resource.data.receita.size() >= 1
-                      && request.resource.data.receita.size() <= 60;
+                      && ((doc == 'categorias' && cfgCategorias(request.resource.data))
+                       || (doc == 'orcamento' && cfgOrcamento(request.resource.data)));
       }
 
       // ---------- Metas programadas (rotinas) ----------
