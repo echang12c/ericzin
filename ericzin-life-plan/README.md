@@ -57,6 +57,12 @@ seucofrin.pages.dev) fundido aqui dentro com a paleta do LifePlan.
   são itens do grupo *Casa* da sidebar (no celular, a barra de baixo troca para elas
   quando você está no Cofrin). O LifePlan escolhe a aba via `window.cofrinAbrirAba`.
   Link direto: `/#cofrin/metas` (qualquer id de aba).
+- **Raio-X (antiga aba Relatórios) e Resumo:** pensados para o celular. Os filtros do Raio-X
+  (período, categorias, forma de pagamento e perfil Essencial/Bem-estar/Prazer) valem para todos os
+  gráficos e ficam no `localStorage` (`cofrin_raiox_v1`, `cofrin_perfis_v1`), sem mudar o Firestore.
+  A aba Mercado ganhou período rápido e gráficos próprios (gasto por mês, dia da semana, lojas lado a
+  lado, inflação do carrinho). Tudo isso vive em `meucofrin/index.html`; é só rodar o sincronizador.
+  Da Finanças dá para abrir o Raio-X direto (`window.lpCofrinTab`).
 - **Notificação das metas:** o worker manda `https://ericzin.pages.dev/#cofrin/metas`, então
   ela abre o LifePlan mesmo quando o aparelho foi inscrito pelo seucofrin
   (precisa publicar o `notifier` à mão).
