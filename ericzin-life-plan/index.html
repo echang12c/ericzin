@@ -360,6 +360,14 @@
   .ritual-btn{ border:2px solid var(--accent); background:transparent; color:var(--data); font-weight:800; font-size:11.5px; padding:4px 14px; border-radius:100px; cursor:pointer; flex:none; }
   .ritual-btn.done{ background:var(--accent); color:var(--on-accent); }
 
+
+  .cf-cta{ display:flex; align-items:center; gap:14px; width:100%; text-align:left; cursor:pointer; margin-bottom:1.1rem; color:var(--text); font-family:inherit; border-left:5px solid var(--primary); }
+  .cf-cta-ico{ font-size:28px; flex:none; }
+  .cf-cta-txt{ flex:1; min-width:0; }
+  .cf-cta-txt b{ display:block; font-family:'Baloo 2',sans-serif; font-size:16px; }
+  .cf-cta-txt small{ display:block; font-size:12.5px; color:var(--text-2); margin-top:2px; line-height:1.4; }
+  .cf-cta-go{ font-size:26px; color:var(--text-2); flex:none; }
+
   .m-account{ display:none; }
   .detail-grid > *, .stat-duo > *{ min-width:0; }
 
@@ -405,7 +413,7 @@
     .m-item.active .ico{ color:var(--sec-bg); }
     .m-backdrop{ position:fixed; inset:0; z-index:-1; background:rgba(17,24,39,.35); display:none; }
     .m-top.open .m-backdrop{ display:block; }
-    #cofrin header.cfHeader{ top:calc(60px + env(safe-area-inset-top,0px)); }
+    #cofrin{ --cf-sticky-top:calc(60px + env(safe-area-inset-top,0px)); }
 
     .main{ padding:1.25rem 16px calc(28px + env(safe-area-inset-bottom,0px)); }
     .page-head{ margin-bottom:1.1rem; }
@@ -554,12 +562,12 @@
     </div>
     <div class="tabsMenu" id="tabsMenu">
       <button type="button" class="tabsToggle" id="tabsToggle" aria-expanded="false" aria-controls="tabsList">
-        <span id="tabsToggleLabel">📊 Dashboard</span><span class="chev">▼</span>
+        <span id="tabsToggleLabel">📊 Resumo</span><span class="chev">▼</span>
       </button>
       <nav class="tabs" id="tabsList">
-        <button data-tab="dash" class="active">📊 Dashboard</button>
+        <button data-tab="dash" class="active">📊 Resumo</button>
         <button data-tab="tx">💸 Lançamentos</button>
-        <button data-tab="relat">📈 Relatórios</button>
+        <button data-tab="relat">🔎 Raio-X</button>
         <button data-tab="mercado">🛒 Mercado</button>
         <button data-tab="contas">🏠 Contas da casa</button>
         <button data-tab="metas">✅ Metas do dia</button>
@@ -570,19 +578,26 @@
   </header>
 
   <main>
-    <!-- ===== Dashboard ===== -->
+    <!-- ===== Resumo ===== -->
     <section id="tab-dash">
       <div class="card kpi saldoHero" id="cardSaldo">
         <div class="lbl">Saldo do mês</div>
         <div class="val" id="kSaldo">R$ 0,00</div>
         <div class="sub" id="kSaldoSub"></div>
+        <div class="usoBox hidden" id="usoBox">
+          <div class="usoT" id="kUsoTxt"></div>
+          <div class="usoBar"><span id="kUsoBar" style="width:0"></span></div>
+        </div>
       </div>
-      <div class="grid2" style="margin-top:14px">
-        <div class="card kpi"><div class="lbl">Receitas</div><div class="val pos" id="kReceitas">R$ 0,00</div></div>
-        <div class="card kpi"><div class="lbl">Despesas</div><div class="val neg" id="kDespesas">R$ 0,00</div></div>
+      <div class="rxTiles four">
+        <div><span>Receitas</span><b class="pos" id="kReceitas">R$ 0,00</b></div>
+        <div><span>Despesas</span><b class="neg" id="kDespesas">R$ 0,00</b></div>
+        <div><span>Por dia</span><b id="kDia">—</b></div>
+        <div><span id="kProjL">Fecha em</span><b id="kProj">—</b></div>
       </div>
-      <h2 class="section">Gastos por categoria</h2>
-      <div class="card chartBox"><canvas id="chartCat"></canvas></div>
+      <h2 class="section">Para onde foi o dinheiro</h2>
+      <div class="card"><div class="rxRows" id="dashCats"><div class="empty">Sem lançamentos ainda.</div></div></div>
+      <button type="button" class="btnPrimary rxIr" id="btnRaioX">🔎 Abrir o Raio-X completo</button>
       <h2 class="section">Últimos 6 meses</h2>
       <div class="card chartBox"><canvas id="chartTrend"></canvas></div>
       <h2 class="section">Maiores gastos do mês</h2>
@@ -608,43 +623,19 @@
       <div class="card txList" id="txList"><div class="empty">Nenhum lançamento neste mês. Toque em + para adicionar.</div></div>
     </section>
 
-    <!-- ===== Relatórios ===== -->
+    <!-- ===== Raio-X (antigo Relatórios) ===== -->
     <section id="tab-relat" class="hidden">
-      <div class="card relCtrls">
-        <div class="relRow">
-          <div class="field"><label>Período</label>
-            <div class="segment" id="relModo">
-              <button type="button" data-m="mensal" class="selInc">Mensal</button>
-              <button type="button" data-m="diario">Diário</button>
-            </div>
-          </div>
-          <div class="field"><label>Categoria</label><select id="relCatSel"></select></div>
+      <div class="rxBar" id="rxBar">
+        <div class="rxPer" id="rxPer" aria-label="Período"></div>
+        <div class="rxFlt">
+          <button type="button" class="rxFbtn" id="rxBtnCats">🏷️ Categorias <b></b></button>
+          <button type="button" class="rxFbtn" id="rxBtnPag">💳 Pagamento <b></b></button>
+          <button type="button" class="rxFbtn" id="rxBtnGrp">🧭 Perfil <b></b></button>
+          <button type="button" class="rxClear hidden" id="rxClear">Limpar</button>
         </div>
-        <div class="relRow" id="relPeriodoMensal">
-          <div class="field"><label>De (mês)</label><input type="month" id="relDe"></div>
-          <div class="field"><label>Até (mês)</label><input type="month" id="relAte"></div>
-        </div>
-        <div class="relRow hidden" id="relPeriodoDiario">
-          <div class="field"><label>Mês do relatório</label><input type="month" id="relMes"></div>
-        </div>
+        <div class="rxSum" id="rxSum"></div>
       </div>
-      <div class="grid3" style="margin-top:14px">
-        <div class="card kpi"><div class="lbl">Receitas</div><div class="val pos" id="relRec">R$ 0,00</div></div>
-        <div class="card kpi"><div class="lbl">Despesas</div><div class="val neg" id="relDesp">R$ 0,00</div></div>
-        <div class="card kpi"><div class="lbl">Saldo</div><div class="val" id="relSaldo">R$ 0,00</div></div>
-      </div>
-      <h2 class="section" id="relChartTitle">Evolução</h2>
-      <div class="card chartBox"><canvas id="chartRel"></canvas></div>
-      <div id="relDonutBox">
-        <h2 class="section" id="relDonutTitle">Distribuição por categoria</h2>
-        <div class="card chartBox"><canvas id="chartRelDonut"></canvas></div>
-      </div>
-      <div id="relLinhaBox">
-        <h2 class="section" id="relLinhaTitle">Categorias ao longo do tempo</h2>
-        <div class="card chartBox"><canvas id="chartRelLinha"></canvas></div>
-      </div>
-      <h2 class="section">Detalhes</h2>
-      <div class="card" id="relTabela"><div class="empty">Escolha o período para montar o relatório.</div></div>
+      <div id="rxBody"><div class="empty">Montando o seu raio-X…</div></div>
     </section>
 
     <!-- ===== Mercado ===== -->
@@ -661,7 +652,12 @@
         </div>
       </div>
 
-      <div class="card relCtrls" style="margin-top:14px">
+      <div class="rxBar" id="mkBar">
+        <div class="rxPer" id="mkPer" aria-label="Período"></div>
+      </div>
+      <details class="card mkManual" id="mkPeriodoManual" style="margin-bottom:14px">
+      <summary>Personalizar período, loja e busca</summary>
+      <div class="relCtrls" style="margin-top:12px">
         <div class="relRow">
           <div class="field"><label>De (mês)</label><input type="month" id="mkDe"></div>
           <div class="field"><label>Até (mês)</label><input type="month" id="mkAte"></div>
@@ -671,6 +667,11 @@
           <div class="field"><label>Buscar produto</label><input id="mkBusca" placeholder="Ex.: arroz, leite…" autocomplete="off"></div>
         </div>
       </div>
+      </details>
+
+      <div id="mkVisao"></div>
+
+      <h2 class="section">Detalhe por produto</h2>
 
       <div class="grid3" style="margin-top:14px">
         <div class="card kpi"><div class="lbl">Gasto no período</div><div class="val neg" id="mkKTotal">R$ 0,00</div></div>
@@ -836,6 +837,18 @@
   <footer class="appFooter"><a href="https://seucofrin.pages.dev/privacidade.html" target="_blank" rel="noopener">Política de Privacidade</a></footer>
 
   <button class="fab" id="fabAdd" aria-label="Novo lançamento">+</button>
+</div>
+
+<!-- ===== Bottom sheet dos filtros do Raio-X ===== -->
+<div class="sheetWrap hidden" id="rxSheet">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="rxSheetT">
+    <h3 id="rxSheetT"></h3>
+    <div class="sheetB" id="rxSheetB"></div>
+    <div class="sheetAct">
+      <button type="button" class="btnGhost" id="rxSheetLimpa">Limpar</button>
+      <button type="button" class="btnPrimary" id="rxSheetOk">Aplicar</button>
+    </div>
+  </div>
 </div>
 
 <!-- ===== Modal lançamento ===== -->
@@ -1903,6 +1916,11 @@
     var main = document.getElementById('main');
     main.innerHTML = pageHeaderHtml(pillar, 'Fatura, gastos e metas de longo prazo', 'Números de exemplo, só pra ilustrar como a aba funciona — troca pelos seus valores quando for usar de verdade.') +
       '<div class="pillar-body" style="--accent:' + pillar.accent + '">' +
+        '<button type="button" class="card cf-cta" id="goRaioX">' +
+          '<span class="cf-cta-ico">🔎</span>' +
+          '<span class="cf-cta-txt"><b>Veja o seu gasto de verdade</b><small>Raio-X do Meu Cofrin: para onde vai cada R$ 100, o que mudou no mês e quanto você economiza cortando</small></span>' +
+          '<span class="cf-cta-go">›</span>' +
+        '</button>' +
         '<div class="detail-grid">' +
           '<div class="card">' +
             '<div class="card-title">Fatura do mês</div>' +
@@ -1937,6 +1955,8 @@
 
     document.getElementById('backBtn').onclick = function(){ navigate('overview'); };
 
+    var goRx = document.getElementById('goRaioX');
+    if(goRx) goRx.onclick = function(){ navigate('cofrin', 'relat'); };
     var tabsEl = document.getElementById('monthTabs');
     months.forEach(function(m){
       var b = document.createElement('button');
@@ -2248,9 +2268,9 @@
 
   /* ---------- routing / sidebar ---------- */
   var CF_TABS = [
-    { id:'dash',    ico:'📊', name:'Dashboard',       short:'Painel' },
+    { id:'dash',    ico:'📊', name:'Resumo',          short:'Resumo' },
     { id:'tx',      ico:'💸', name:'Lançamentos',     short:'Lançam.' },
-    { id:'relat',   ico:'📈', name:'Relatórios',      short:'Relatórios' },
+    { id:'relat',   ico:'🔎', name:'Raio-X',          short:'Raio-X' },
     { id:'mercado', ico:'🛒', name:'Mercado',         short:'Mercado' },
     { id:'contas',  ico:'🏠', name:'Contas da casa',  short:'Contas' },
     { id:'metas',   ico:'✅', name:'Metas do dia',    short:'Metas' },
@@ -2418,6 +2438,9 @@
     }
     updateSidebarFooter();
   }
+
+  /* o cofrin pede para abrir uma aba (ex.: Resumo -> Raio-X filtrado por categoria) */
+  window.lpCofrinTab = function(tab){ navigate('cofrin', cfTabValid(tab) ? tab : state.cfTab); };
 
   /* notificação clicada com o app já aberto: só o hash muda */
   window.addEventListener('hashchange', function(){

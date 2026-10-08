@@ -374,6 +374,174 @@
 #cofrin .notaTot b{font-family:var(--mono);font-size:17px}
 #cofrin .notaTot .dif{color:var(--warn);font-size:12px;font-weight:600}
 
+/* ---------- Raio-X, Resumo e filtros (pensado para o celular) ---------- */
+#cofrin .rxBar{position:sticky;top:var(--cf-sticky-top,0px);z-index:12;background:var(--bg);padding:8px 0 10px;margin-bottom:14px;border-bottom:1px solid var(--line);box-shadow:0 0 0 100vmax var(--bg);clip-path:inset(0 -100vmax)}
+#cofrin .rxPer{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:2px 0 4px}
+#cofrin .rxPer::-webkit-scrollbar{display:none}
+#cofrin .rxPill{flex:none;min-height:40px;padding:0 16px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-weight:700;font-size:14px;color:var(--muted);white-space:nowrap}
+#cofrin .rxPill.on{background:var(--primary-soft);border-color:var(--primary);color:var(--ink)}
+#cofrin .rxFlt{display:flex;gap:8px;margin-top:6px}
+#cofrin .rxFbtn{flex:1;min-height:44px;display:flex;align-items:center;justify-content:center;gap:6px;border-radius:14px;border:1px solid var(--line);background:var(--surface);font-weight:700;font-size:13.5px;color:var(--ink);padding:0 6px}
+#cofrin .rxFbtn b{min-width:20px;height:20px;border-radius:999px;background:var(--primary);color:var(--ink);font-size:12px;line-height:20px;text-align:center;display:none}
+#cofrin .rxFbtn.on{border-color:var(--primary);background:var(--primary-soft)}
+#cofrin .rxFbtn.on b{display:inline-block}
+#cofrin .rxClear{flex:none;min-height:44px;border:none;background:none;color:var(--muted);font-weight:700;text-decoration:underline;padding:0 6px}
+#cofrin .rxSum{font-size:12.5px;color:var(--muted);margin-top:8px;line-height:1.35}
+#cofrin .rxSum b{color:var(--ink)}
+
+#cofrin .rxCard{margin-bottom:14px;scroll-margin-top:150px}
+#cofrin .rxT{font-family:var(--display);font-size:17px;font-weight:700;margin-bottom:4px}
+#cofrin .rxS{font-size:13.5px;color:var(--muted);line-height:1.5;margin-bottom:12px}
+#cofrin .rxS b,#cofrin .rxS .rxLink{color:var(--ink)}
+#cofrin .rxMut{color:var(--muted);font-size:12.5px}
+#cofrin .rxLink{border:none;background:none;padding:0;font:inherit;font-weight:700;text-decoration:underline;white-space:nowrap}
+#cofrin .rxChart{position:relative;width:100%}
+#cofrin .rxDelta{display:inline-block;font-size:12px;font-weight:800;padding:2px 8px;border-radius:999px;white-space:nowrap}
+#cofrin .rxDelta.ruim{background:var(--expense-soft);color:var(--expense)}
+#cofrin .rxDelta.bom{background:var(--income-soft);color:var(--income)}
+#cofrin .rxDelta.igual{background:color-mix(in srgb,var(--ink) 8%,transparent);color:var(--muted)}
+
+#cofrin .rxHero{border-top:5px solid var(--primary);padding-top:16px}
+#cofrin .rxHeroL{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+#cofrin .rxHeroV{font-family:var(--display);font-weight:800;font-size:40px;letter-spacing:-.02em;line-height:1.1;margin:4px 0 6px;font-variant-numeric:tabular-nums}
+#cofrin .rxHeroD{font-size:13px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#cofrin .rxTiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+#cofrin .rxTiles>div{background:color-mix(in srgb,var(--ink) 5%,transparent);border-radius:14px;padding:10px;min-width:0}
+#cofrin .rxTiles span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+#cofrin .rxTiles b{display:block;font-family:var(--display);font-size:clamp(14px,4.1vw,18px);margin-top:2px;font-variant-numeric:tabular-nums;white-space:nowrap}
+#cofrin .rxTiles.four{grid-template-columns:repeat(2,1fr);gap:10px;margin:14px 0}
+#cofrin .rxTiles.four>div{background:var(--surface);border:1px solid var(--line);box-shadow:0 3px 0 var(--line)}
+@media(min-width:720px){#cofrin .rxTiles.four{grid-template-columns:repeat(4,1fr)}}
+#cofrin .rxRenda{margin-top:16px;padding-top:14px;border-top:1px dashed var(--line)}
+#cofrin .rxRendaT{font-size:14.5px;line-height:1.4}
+#cofrin .rxRendaBar{height:12px;border-radius:999px;background:color-mix(in srgb,var(--ink) 9%,transparent);overflow:hidden;margin:10px 0 8px}
+#cofrin .rxRendaBar span{display:block;height:100%;border-radius:999px;background:var(--expense)}
+#cofrin .rxRendaS{font-size:13px;color:var(--muted)}
+#cofrin .rxRendaS b{color:var(--ink)}
+
+#cofrin .rxRows{display:flex;flex-direction:column;gap:4px}
+#cofrin .rxRow{display:block;width:100%;text-align:left;border:none;background:none;color:inherit;font:inherit;padding:10px 6px;border-radius:12px;min-height:56px}
+#cofrin .rxRow.static{cursor:default}
+#cofrin .rxRow:not(.static):active{background:color-mix(in srgb,var(--ink) 6%,transparent)}
+#cofrin .rxRow.sel{background:var(--primary-soft)}
+#cofrin .rxRow.dim{opacity:.5}
+#cofrin .rxRow .top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+#cofrin .rxRow .n{display:flex;align-items:center;gap:8px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#cofrin .rxRow .n i,#cofrin .rxVar .n i,#cofrin .rxPerf>i,#cofrin .rxDot{display:inline-block;width:10px;height:10px;border-radius:3px;flex:none}
+#cofrin .rxDot{margin-right:8px}
+#cofrin .rxRow .v{font-family:var(--mono);font-weight:700;font-size:14.5px;white-space:nowrap;font-variant-numeric:tabular-nums}
+#cofrin .rxRow .b{display:block;height:8px;border-radius:999px;background:color-mix(in srgb,var(--ink) 7%,transparent);margin:7px 0 5px;overflow:hidden}
+#cofrin .rxRow .b span{display:block;height:100%;border-radius:999px}
+#cofrin .rxRow .sub{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+#cofrin .rxMais{display:block;width:100%;min-height:44px;margin-top:6px;border:1px dashed var(--line);border-radius:12px;background:none;color:var(--muted);font-weight:700}
+
+#cofrin .rxVarT{font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:10px 0 2px}
+#cofrin .rxVar{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.8fr) auto;align-items:center;gap:10px;width:100%;border:none;background:none;color:inherit;font:inherit;text-align:left;padding:9px 4px;min-height:44px;border-radius:10px}
+#cofrin .rxVar.static{grid-template-columns:minmax(0,1fr) auto}
+#cofrin .rxVar .n{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#cofrin .rxVar .b{display:block;height:8px;border-radius:999px;background:color-mix(in srgb,var(--ink) 7%,transparent);overflow:hidden}
+#cofrin .rxVar .b span{display:block;height:100%;border-radius:999px}
+#cofrin .rxVar.sobe .b span{background:var(--expense)}
+#cofrin .rxVar.desce .b span{background:var(--income)}
+#cofrin .rxVar .v{font-family:var(--mono);font-weight:700;font-size:13.5px;text-align:right;white-space:nowrap}
+#cofrin .rxVar .v small{display:block;font-family:var(--body);font-size:11.5px;font-weight:600;color:var(--muted)}
+#cofrin .rxVar.sobe .v{color:var(--expense)}
+#cofrin .rxVar.desce .v{color:var(--income)}
+#cofrin .rxVar:not(.static):active{background:color-mix(in srgb,var(--ink) 6%,transparent)}
+
+#cofrin .rxSeg{display:flex;height:16px;border-radius:999px;overflow:hidden;gap:2px;margin:2px 0 12px;background:color-mix(in srgb,var(--ink) 6%,transparent)}
+#cofrin .rxSeg span{display:block;height:100%}
+#cofrin .rxPerfs{margin-bottom:10px}
+#cofrin .rxPerf{display:flex;align-items:center;gap:12px;padding:9px 2px}
+#cofrin .rxPerf .x{flex:1;min-width:0}
+#cofrin .rxPerf .x b,#cofrin .rxPerf .y b{display:block;font-size:14.5px}
+#cofrin .rxPerf .x small,#cofrin .rxPerf .y small{display:block;font-size:12px;color:var(--muted);margin-top:1px}
+#cofrin .rxPerf .y{text-align:right}
+#cofrin .rxPerf .y b{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+#cofrin .rxCal{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+#cofrin .rxCal .h{text-align:center;font-size:11px;font-weight:800;color:var(--muted);padding-bottom:2px}
+#cofrin .rxCal .d{aspect-ratio:1;min-height:38px;border:1px solid var(--line);border-radius:10px;background:color-mix(in srgb,var(--ink) 4%,transparent);color:var(--ink);font:700 13px var(--body);display:flex;align-items:center;justify-content:center;padding:0}
+#cofrin .rxCal .d.n4{color:#fff}
+#cofrin .rxCal .d.sel{outline:3px solid var(--ink);outline-offset:1px}
+#cofrin .rxCalLeg{display:flex;align-items:center;justify-content:flex-end;gap:5px;font-size:11.5px;color:var(--muted);margin-top:10px}
+#cofrin .rxCalLeg i{width:16px;height:16px;border-radius:5px;display:inline-block}
+#cofrin .rxCalDia{margin-top:12px}
+#cofrin .rxCalDiaT{font-size:14px;padding:10px 0 6px;border-top:1px dashed var(--line);text-transform:capitalize}
+#cofrin .rxCalDiaT b{text-transform:none}
+#cofrin .rxCalIt{display:flex;justify-content:space-between;gap:12px;padding:8px 0;font-size:14px;border-bottom:1px solid var(--line)}
+#cofrin .rxCalIt:last-child{border-bottom:none}
+#cofrin .rxCalIt small{display:block;color:var(--muted);font-size:12px}
+#cofrin .rxCalIt b{font-family:var(--mono);white-space:nowrap}
+
+#cofrin .rxSlider{margin:14px 0 6px}
+#cofrin .rxSlider label{display:block;font-size:13.5px;font-weight:700;margin-bottom:6px}
+#cofrin .rxSlider input[type=range]{width:100%;height:36px;accent-color:var(--primary)}
+#cofrin .rxSimOut{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+#cofrin .rxSimBig{background:color-mix(in srgb,var(--ink) 5%,transparent);border-radius:14px;padding:12px 14px}
+#cofrin .rxSimBig span{display:block;font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+#cofrin .rxSimBig b{display:block;font-family:var(--display);font-size:22px;margin-top:2px;font-variant-numeric:tabular-nums}
+#cofrin .rxSimTxt{grid-column:1/-1;font-size:13.5px;line-height:1.5;color:var(--muted)}
+#cofrin .rxSimTxt b{color:var(--ink)}
+#cofrin .rxDet{padding:0}
+#cofrin .rxDet summary{list-style:none;cursor:pointer;min-height:52px;display:flex;align-items:center;padding:0 18px;font-weight:700}
+#cofrin .rxDet summary::-webkit-details-marker{display:none}
+#cofrin .rxDet[open] summary{border-bottom:1px solid var(--line)}
+#cofrin .rxDet>div{padding-left:18px;padding-right:18px}
+#cofrin .rxDet>.relTableWrap{margin:0 12px 14px}
+
+/* bottom sheet de filtros */
+#cofrin .sheetWrap{position:fixed;inset:0;background:rgba(17,24,39,.5);z-index:55;display:flex;align-items:flex-end;justify-content:center}
+#cofrin .sheet{background:var(--surface);color:var(--ink);width:100%;max-width:560px;max-height:88dvh;border-radius:24px 24px 0 0;padding:8px 18px calc(14px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;animation:rxSobe .22s ease-out}
+#cofrin .sheet::before{content:"";width:44px;height:5px;border-radius:999px;background:var(--line);margin:4px auto 12px;flex:none}
+#cofrin .sheet h3{font-family:var(--display);font-size:20px;margin-bottom:4px}
+#cofrin .sheetB{overflow:auto;flex:1;padding-bottom:8px;-webkit-overflow-scrolling:touch}
+#cofrin .rxSheetP{font-size:13.5px;color:var(--muted);margin:2px 0 12px}
+#cofrin .rxSheetSub{font-family:var(--display);font-size:15px;margin:18px 0 6px;padding-top:14px;border-top:1px dashed var(--line)}
+#cofrin .rxChs{display:flex;flex-wrap:wrap;gap:8px}
+#cofrin .rxCh{min-height:44px;display:inline-flex;align-items:center;gap:8px;padding:0 16px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);font-weight:700;font-size:14.5px}
+#cofrin .rxCh i{width:10px;height:10px;border-radius:3px;display:inline-block}
+#cofrin .rxCh.on{background:var(--primary-soft);border-color:var(--primary)}
+#cofrin .rxCh.on::after{content:"✓";font-weight:800}
+#cofrin .rxMap{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)}
+#cofrin .rxMap>span{font-weight:600;font-size:14.5px}
+#cofrin .rxMap .segment button{padding:0;width:46px;min-height:44px;font-size:18px}
+#cofrin .rxMap .segment button.selInc{background:var(--primary-soft);box-shadow:inset 0 0 0 2px var(--primary)}
+#cofrin .sheetAct{display:flex;gap:10px;padding-top:12px;border-top:1px solid var(--line)}
+#cofrin .sheetAct button{flex:1;min-height:48px}
+
+
+/* Resumo */
+#cofrin .usoBox{margin-top:14px}
+#cofrin .usoT{font-size:13.5px;font-weight:700}
+#cofrin .usoBar{height:10px;border-radius:999px;background:rgba(255,255,255,.3);margin-top:8px;overflow:hidden}
+#cofrin .usoBar span{display:block;height:100%;border-radius:999px;background:#fff;transition:width .4s}
+#cofrin .rxIr{width:100%;min-height:50px;margin-top:14px}
+
+/* ---------- Passada geral no celular ---------- */
+@media(max-width:760px){
+  #cofrin input,#cofrin select,#cofrin textarea{font-size:16px}
+  #cofrin .field input,#cofrin .field select{min-height:46px}
+  #cofrin .btnPrimary,#cofrin .btnGhost,#cofrin .btnDanger{min-height:46px}
+  #cofrin .chip{min-height:40px;padding:0 14px;display:inline-flex;align-items:center}
+  #cofrin .segment button{min-height:44px}
+  #cofrin .toolRow{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-right:-16px;padding-right:16px}
+  #cofrin .toolRow::-webkit-scrollbar{display:none}
+  #cofrin .toolRow .btnGhost{flex:none;white-space:nowrap}
+  #cofrin .chipRow{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  #cofrin .chipRow::-webkit-scrollbar{display:none}
+  #cofrin .chipRow .chip{flex:none}
+  #cofrin h2.section{font-size:17px;margin:22px 0 10px}
+  #cofrin .chartBox{height:230px}
+  #cofrin .saldoHero .val{font-size:34px}
+  #cofrin .txItem{padding:14px 2px;min-height:60px}
+  #cofrin .txDel{min-width:40px;min-height:40px}
+  #cofrin header.app,#cofrin header.cfHeader{position:static}
+  #cofrin .mkHero .btns button{min-height:48px}
+  #cofrin .modal{padding:20px 18px calc(20px + env(safe-area-inset-bottom,0px))}
+  #cofrin .relTable{font-size:13px}
+}
+
 @media(min-width:760px){#cofrin .tabsToggle{display:none}#cofrin nav.tabs{display:flex;flex-direction:row;flex-wrap:wrap;padding-top:0}}
 #cofrin .cfTitle{font-family:var(--display);font-size:clamp(1.6rem,2.4vw,2rem);line-height:1.1}
 #cofrin .cfTitle small{display:block;font-family:var(--body);font-size:13px;font-weight:600;color:var(--muted);margin-top:2px}
@@ -383,3 +551,4 @@
 
 @keyframes bauFloat{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-6px) rotate(4deg)}}
 @keyframes bauShake{0%,100%{transform:rotate(-8deg) scale(1)}50%{transform:rotate(8deg) scale(1.1)}}
+@keyframes rxSobe{from{transform:translateY(40px);opacity:.6}to{transform:none;opacity:1}}

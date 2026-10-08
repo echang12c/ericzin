@@ -320,6 +320,7 @@ function carregarMes(){
 
 /* ---------------- Tendência (6 meses) ---------------- */
 async function carregarTendencia(){
+  rxInvalida();
   const meses=[]; for(let i=5;i>=0;i--) meses.push(shiftMes(state.mes,-i));
   const snap = await col('tx').where('mes','in',meses).get();
   const agg={}; meses.forEach(m=>agg[m]={rec:0,desp:0});
@@ -354,24 +355,42 @@ function renderDash(){
   document.getElementById('kReceitas').textContent=fmt(rec);
   document.getElementById('kDespesas').textContent=fmt(desp);
 
+  // quanto da renda já foi
+  const uso=document.getElementById('usoBox');
+  uso.classList.toggle('hidden', !(rec>0));
+  if(rec>0){
+    const r=desp/rec*100;
+    document.getElementById('kUsoTxt').textContent=`Você já usou ${Math.round(r)}% do que entrou`;
+    document.getElementById('kUsoBar').style.width=Math.min(r,100)+'%';
+  }
+  // ritmo: média por dia e para onde o mês caminha
+  const ehAtual=state.mes===mesAtual();
+  const dim=diasDoMes(state.mes), passados=ehAtual?new Date().getDate():dim;
+  document.getElementById('kDia').textContent=desp?fmtInt(desp/Math.max(1,passados)):'—';
+  const projL=document.getElementById('kProjL'), proj=document.getElementById('kProj');
+  if(ehAtual && desp && passados>=3){ projL.textContent='Fecha o mês em'; proj.textContent=fmtInt(desp/passados*dim); }
+  else{ projL.textContent='Total do mês'; proj.textContent=desp?fmtInt(desp):'—'; }
+
+  // categorias (toque abre o Raio-X já filtrado)
+  const cats=Object.entries(porCat).sort((a,b)=>b[1]-a[1]);
+  const box=document.getElementById('dashCats');
+  if(!cats.length) box.innerHTML='<div class="empty">Sem lançamentos ainda.</div>';
+  else{
+    const max=cats[0][1], cor=i=>vzCor(i);
+    box.innerHTML=cats.slice(0,6).map(([c,v],i)=>`<button type="button" class="rxRow" data-cat="${esc(c)}">
+      <span class="top"><span class="n"><i style="background:${cor(i)}"></i>${esc(c)}</span><span class="v">${fmt(v)}</span></span>
+      <span class="b"><span style="width:${Math.max(2,v/max*100)}%;background:${cor(i)}"></span></span>
+      <span class="sub"><span>${(v/desp*100).toFixed(0)}% das despesas</span></span></button>`).join('');
+    box.querySelectorAll('.rxRow').forEach(b=>b.onclick=()=>abrirRaioX(b.dataset.cat));
+  }
+
   // top 5 gastos
   const top=[...state.txs].filter(t=>t.tipo==='despesa').sort((a,b)=>b.valor-a.valor).slice(0,5);
-  const box=document.getElementById('topGastos');
-  box.innerHTML = top.length ? top.map(t=>txHTML(t)).join('') : '<div class="empty">Sem lançamentos ainda.</div>';
-  ligarAcoes(box);
-
-  // gráfico categorias
-  const labels=Object.keys(porCat).sort((a,b)=>porCat[b]-porCat[a]);
-  const data=labels.map(l=>porCat[l]/100);
-  if(state.charts.cat) state.charts.cat.destroy();
-  state.charts.cat=new Chart(document.getElementById('chartCat'),{
-    type:'doughnut',
-    data:{labels,datasets:[{data,backgroundColor:labels.map((_,i)=>CAT_COLORS[i%CAT_COLORS.length]),borderWidth:0}]},
-    options:{maintainAspectRatio:false,cutout:'62%',
-      plugins:{legend:{position:'right',labels:{boxWidth:12,font:{family:'Schibsted Grotesk'}}},
-      tooltip:{callbacks:{label:c=>` ${c.label}: ${c.parsed.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}`}}}}
-  });
+  const tbox=document.getElementById('topGastos');
+  tbox.innerHTML = top.length ? top.map(t=>txHTML(t)).join('') : '<div class="empty">Sem lançamentos ainda.</div>';
+  ligarAcoes(tbox);
 }
+document.getElementById('btnRaioX').onclick=()=>abrirRaioX();
 
 function renderTrendChart(){
   const meses=Object.keys(state.trend);
@@ -597,53 +616,19 @@ document.getElementById('catForm').addEventListener('submit', async e=>{
   }catch(ex){ toast('Erro ao criar: '+ex.message); }
 });
 
-/* ---------------- Relatórios ----------------
-   Os filtros do topo (período, de/até e categoria) valem para
-   todos os gráficos e tabelas da aba ao mesmo tempo. */
-const rel={modo:'mensal', cat:''};
-
-function abrirRelatorios(){
-  if(!document.getElementById('relDe').value){
-    document.getElementById('relDe').value=shiftMes(state.mes,-5);
-    document.getElementById('relAte').value=state.mes;
-    document.getElementById('relMes').value=state.mes;
-  }
-  preencherRelCats();
-  gerarRelatorio();
-}
-function preencherRelCats(){
-  const sel=document.getElementById('relCatSel');
-  const atual=rel.cat;
-  const todas=[...new Set([...catsD(),...catsR()])];
-  sel.innerHTML='<option value="">— todas as categorias —</option>'+
-    todas.map(c=>`<option value="${esc(c)}"${c===atual?' selected':''}>${esc(c)}</option>`).join('');
-}
+/* ---------------- Utilidades de gráficos e períodos ---------------- */
 function relSegAtivo(segId, attr, val){
   document.querySelectorAll('#'+segId+' button').forEach(b=>
     b.className = b.dataset[attr]===val ? 'selInc' : '');
 }
-document.querySelectorAll('#relModo button').forEach(b=>{
-  b.onclick=()=>{
-    rel.modo=b.dataset.m;
-    relSegAtivo('relModo','m',rel.modo);
-    document.getElementById('relPeriodoMensal').classList.toggle('hidden', rel.modo!=='mensal');
-    document.getElementById('relPeriodoDiario').classList.toggle('hidden', rel.modo!=='diario');
-    gerarRelatorio();
-  };
-});
-document.getElementById('relDe').onchange=gerarRelatorio;
-document.getElementById('relAte').onchange=gerarRelatorio;
-document.getElementById('relMes').onchange=gerarRelatorio;
-document.getElementById('relCatSel').onchange=e=>{ rel.cat=e.target.value; gerarRelatorio(); };
-
 function mesesEntre(ini,fim){
   const out=[]; let m=ini;
-  while(m<=fim && out.length<60){ out.push(m); m=shiftMes(m,1); }
+  while(m<=fim && out.length<240){ out.push(m); m=shiftMes(m,1); }
   return out;
 }
 function mesCurto(m){
   const [y,mo]=m.split('-');
-  return new Date(y,mo-1,1).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'});
+  return new Date(y,mo-1,1).toLocaleDateString('pt-BR',{month:'short'}).replace('.','')+'/'+y.slice(2);
 }
 function mkChart(slot, canvasId, cfg){
   if(state.charts[slot]) state.charts[slot].destroy();
@@ -653,186 +638,706 @@ function relBoxVisivel(boxId, slot, on){
   document.getElementById(boxId).classList.toggle('hidden', !on);
   if(!on && state.charts[slot]){ state.charts[slot].destroy(); state.charts[slot]=null; }
 }
-/* eixo do tempo do relatório: meses do intervalo ou dias do mês escolhido */
-function relBuckets(mIni, mFim){
-  if(rel.modo==='mensal') return {labels:mesesEntre(mIni,mFim), chave:t=>t.mes};
-  const nDias=new Date(+mIni.slice(0,4), +mIni.slice(5,7), 0).getDate();
-  return {labels:[...Array(nDias)].map((_,i)=>mIni+'-'+String(i+1).padStart(2,'0')), chave:t=>t.data};
-}
-function relBucketLbl(l){ return rel.modo==='mensal' ? mesCurto(l) : l.slice(8); }
-/* totais por categoria de um tipo, em ordem decrescente (define a ordem das cores) */
-function aggCats(txs, tipo){
-  const m={};
-  txs.forEach(t=>{
-    if(t.tipo!==tipo) return;
-    if(!m[t.cat]) m[t.cat]={total:0,qtd:0};
-    m[t.cat].total+=t.valor; m[t.cat].qtd++;
-  });
-  return Object.entries(m).sort((a,b)=>b[1].total-a[1].total);
-}
 const moedaCB=v=>'R$ '+Number(v).toLocaleString('pt-BR');
 const relTooltip={callbacks:{label:c=>` ${c.dataset.label||c.label}: ${(c.parsed.y!==undefined?c.parsed.y:c.parsed).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}`}};
 
-let relBusy=false;
-async function gerarRelatorio(){
-  if(!state.uid || relBusy) return;
-  // campo de período vazio nunca trava o relatório: entra o padrão no lugar
-  let mIni,mFim;
-  if(rel.modo==='mensal'){
-    mIni=document.getElementById('relDe').value;
-    mFim=document.getElementById('relAte').value;
-    if(!mIni){ mIni=shiftMes(state.mes,-5); document.getElementById('relDe').value=mIni; }
-    if(!mFim){ mFim=state.mes; document.getElementById('relAte').value=mFim; }
-    if(mIni>mFim){ [mIni,mFim]=[mFim,mIni];
-      document.getElementById('relDe').value=mIni;
-      document.getElementById('relAte').value=mFim;
-    }
-  }else{
-    mIni=mFim=document.getElementById('relMes').value;
-    if(!mIni){ mIni=mFim=state.mes; document.getElementById('relMes').value=mIni; }
-  }
-  relBusy=true;
-  const tabela=document.getElementById('relTabela');
-  tabela.innerHTML='<div class="empty">Montando o relatório…</div>';
+
+/* ====================================================================
+   RAIO-X — a visão de gasto de vida
+   Um painel só, pensado para o celular, em que os filtros do topo
+   (período, categorias, forma de pagamento e "perfil" do gasto) valem
+   para todos os gráficos ao mesmo tempo. Tudo é calculado no aparelho
+   a partir dos lançamentos (users/{uid}/tx) — nada novo no banco;
+   filtros e perfis ficam no localStorage.
+   ==================================================================== */
+const RX_KEY='cofrin_raiox_v1', RX_GRP_KEY='cofrin_perfis_v1';
+const RX_PERIODOS=[['mes','Mês'],['3m','3 meses'],['6m','6 meses'],['12m','12 meses'],['ano','Ano'],['tudo','Tudo'],['custom','Outro']];
+const RX_GRUPOS=[
+  {id:'ess',nome:'Essencial',emoji:'🏠',desc:'o que sustenta a vida'},
+  {id:'bem',nome:'Bem-estar',emoji:'🌿',desc:'corpo, saúde e cuidados'},
+  {id:'pra',nome:'Prazer',emoji:'🎉',desc:'o que dá para ajustar'},
+];
+const RX_GRUPO_PADRAO={Moradia:'ess',Mercado:'ess',Transporte:'ess','Saúde':'ess','Educação':'ess',Esportes:'bem',Pets:'bem','Assinaturas':'bem'};
+const RX_PAGS=[['credito','💳 Crédito'],['debito','💳 Débito'],['pix','⚡ PIX'],['outro','Sem forma']];
+const RX_DIAS=['dom','seg','ter','qua','qui','sex','sáb'];
+
+/* paleta categórica fixa (a cor segue a categoria, nunca o ranking) */
+const VZ_CLARO=['#2a78d6','#eb6834','#1baf7a','#eda100','#e87ba4','#008300','#4a3aa7','#e34948'];
+const VZ_ESCURO=['#3987e5','#d95926','#199e70','#c98500','#d55181','#008300','#9085e9','#e66767'];
+function rxEscuro(){
+  const th=document.documentElement.getAttribute('data-theme');
+  return th==='dark' || (th!=='light' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+}
+function vzCor(i){ const e=rxEscuro(); return i>=0 && i<8 ? (e?VZ_ESCURO:VZ_CLARO)[i] : (e?'#77776f':'#9a9a94'); }
+
+const rx={
+  per:'6m', de:'', ate:'', cats:[], pag:[], grp:[],
+  gmap:{...RX_GRUPO_PADRAO},
+  cache:new Map(), seq:0, simCat:'', simPct:20, diaSel:null, todas:false,
+  ctx:null,           // resultado do último cálculo (usado pelos toques)
+  draft:null,         // rascunho do bottom sheet
+};
+(function rxCarregaPrefs(){
   try{
-    const snap=await col('tx').where('mes','>=',mIni).where('mes','<=',mFim).get();
-    let txs=snap.docs.map(d=>d.data());
-    if(rel.cat) txs=txs.filter(t=>t.cat===rel.cat);
+    const o=JSON.parse(localStorage.getItem(RX_KEY)||'{}');
+    if(RX_PERIODOS.some(p=>p[0]===o.per)) rx.per=o.per;
+    ['cats','pag','grp'].forEach(k=>{ if(Array.isArray(o[k])) rx[k]=o[k].filter(x=>typeof x==='string'); });
+    if(/^\d{4}-\d{2}$/.test(o.de||'')) rx.de=o.de;
+    if(/^\d{4}-\d{2}$/.test(o.ate||'')) rx.ate=o.ate;
+    const g=JSON.parse(localStorage.getItem(RX_GRP_KEY)||'{}');
+    Object.entries(g).forEach(([c,v])=>{ if(RX_GRUPOS.some(x=>x.id===v)) rx.gmap[c]=v; });
+  }catch(_){}
+})();
+function rxSalva(){
+  try{ localStorage.setItem(RX_KEY,JSON.stringify({per:rx.per,de:rx.de,ate:rx.ate,cats:rx.cats,pag:rx.pag,grp:rx.grp})); }catch(_){}
+}
+function rxSalvaGrupos(){ try{ localStorage.setItem(RX_GRP_KEY,JSON.stringify(rx.gmap)); }catch(_){} }
+const rxGrupoDe=c=>rx.gmap[c]||'pra';
 
-    let rec=0,desp=0;
-    txs.forEach(t=>{ if(t.tipo==='receita') rec+=t.valor; else desp+=t.valor; });
-    document.getElementById('relRec').textContent=fmt(rec);
-    document.getElementById('relDesp').textContent=fmt(desp);
-    const saldoEl=document.getElementById('relSaldo');
-    saldoEl.textContent=fmt(rec-desp);
-    saldoEl.className='val '+(rec-desp>=0?'pos':'neg');
+/* ---------- datas e períodos ---------- */
+function diasDoMes(m){ return new Date(+m.slice(0,4), +m.slice(5,7), 0).getDate(); }
+/* quantos dias do mês já "valem": o mês atual conta só até hoje, meses futuros não contam */
+function diasUteisMes(m){
+  const hoje=mesAtual();
+  if(m>hoje) return 0;
+  return m===hoje ? new Date().getDate() : diasDoMes(m);
+}
+function rxPeriodo(){
+  const ref=state.mes; let ini, fim;
+  switch(rx.per){
+    case 'mes': ini=fim=ref; break;
+    case '3m': ini=shiftMes(ref,-2); fim=ref; break;
+    case '6m': ini=shiftMes(ref,-5); fim=ref; break;
+    case '12m': ini=shiftMes(ref,-11); fim=ref; break;
+    case 'ano': {
+      const a=ref.slice(0,4); ini=a+'-01';
+      fim = a===mesAtual().slice(0,4) ? mesAtual() : a+'-12'; break; }
+    case 'tudo': ini='2000-01'; fim=ref>mesAtual()?ref:mesAtual(); break;
+    default: ini=rx.de||shiftMes(ref,-5); fim=rx.ate||ref;
+  }
+  if(ini>fim) [ini,fim]=[fim,ini];
+  return {ini, fim, tudo:rx.per==='tudo'};
+}
+function rxFinalizaPeriodo(p, txs){
+  if(p.tudo){
+    const ms=txs.map(t=>t.mes).sort();
+    p.ini = ms.length ? ms[0] : p.fim;
+  }
+  p.meses=mesesEntre(p.ini,p.fim);
+  p.n=p.meses.length;
+  if(!p.tudo){
+    p.prev={ini:shiftMes(p.ini,-p.n), fim:shiftMes(p.ini,-1)};
+  }
+  p.label = p.n===1 ? mesLabel(p.ini) : `${mesCurto(p.ini)} a ${mesCurto(p.fim)}`;
+  p.dias = p.meses.reduce((a,m)=>a+diasUteisMes(m),0) || 1;
+  return p;
+}
+async function rxBusca(ini, fim){
+  const k=ini+'|'+fim;
+  if(rx.cache.has(k)) return rx.cache.get(k);
+  const snap=await col('tx').where('mes','>=',ini).where('mes','<=',fim).get();
+  const txs=snap.docs.map(d=>({id:d.id,...d.data()}));
+  rx.cache.set(k,txs);
+  return txs;
+}
+function rxInvalida(){
+  rx.cache.clear();
+  const sec=document.getElementById('tab-relat');
+  if(sec && !sec.classList.contains('hidden')) rxRender();
+  const mkSec=document.getElementById('tab-mercado');
+  if(mkSec && !mkSec.classList.contains('hidden')) mkAtualizaParticipacao();
+}
 
-    if(!txs.length){
-      mkChart('rel','chartRel',{type:'bar',data:{labels:[],datasets:[]},options:{maintainAspectRatio:false}});
-      relBoxVisivel('relDonutBox','relDonut',false);
-      relBoxVisivel('relLinhaBox','relLinha',false);
-      document.getElementById('relChartTitle').textContent='Evolução';
-      tabela.innerHTML='<div class="empty">Nenhum lançamento no período selecionado.</div>';
+/* ---------- filtros ---------- */
+function rxPassa(t, {semCats=false}={}){
+  if(t.tipo!=='despesa') return false;
+  if(!semCats && rx.cats.length && !rx.cats.includes(t.cat)) return false;
+  if(rx.pag.length && !rx.pag.includes(t.pagamento||'outro')) return false;
+  if(rx.grp.length && !rx.grp.includes(rxGrupoDe(t.cat))) return false;
+  return true;
+}
+const rxFiltrosAtivos=()=> (rx.cats.length?1:0)+(rx.pag.length?1:0)+(rx.grp.length?1:0);
+const rxEntre=(t,ini,fim)=>t.mes>=ini && t.mes<=fim;
+const rxSoma=a=>a.reduce((s,t)=>s+t.valor,0);
+
+/* ---------- formatação ---------- */
+const fmtInt=c=>(c/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+function fmtK(c){
+  const v=Math.abs(c)/100;
+  if(v>=1e6) return 'R$ '+(v/1e6).toFixed(1).replace('.',',')+' mi';
+  if(v>=1e4) return 'R$ '+Math.round(v/1e3)+' mil';
+  if(v>=1e3) return 'R$ '+(v/1e3).toFixed(1).replace('.',',')+' mil';
+  return 'R$ '+Math.round(v);
+}
+const pct=(a,b)=> b>0 ? a/b*100 : 0;
+const pct1=v=>v.toFixed(v<10&&v>0?1:0).replace('.',',')+'%';
+function deltaHTML(cur, prev, {invertido=true}={}){
+  if(!(prev>0)) return '';
+  const d=(cur-prev)/prev*100;
+  if(Math.abs(d)<0.5) return '<span class="rxDelta igual">= igual</span>';
+  const sobe=d>0;
+  // para gastos, subir é ruim (vermelho) e descer é bom (verde)
+  const ruim = invertido ? sobe : !sobe;
+  return `<span class="rxDelta ${ruim?'ruim':'bom'}">${sobe?'▲':'▼'} ${pct1(Math.abs(d))}</span>`;
+}
+function rxDiaSemanaN(ini, fim){
+  // quantas vezes cada dia da semana aconteceu no período (só dias que já valem)
+  const n=[0,0,0,0,0,0,0];
+  for(const m of mesesEntre(ini,fim)){
+    const ate=diasUteisMes(m);
+    for(let d=1; d<=ate; d++) n[new Date(+m.slice(0,4), +m.slice(5,7)-1, d).getDay()]++;
+  }
+  return n;
+}
+
+/* ---------- gráficos ---------- */
+function rxLimpaGraficos(prefixo){
+  Object.keys(state.charts).forEach(k=>{
+    if(k.startsWith(prefixo) && state.charts[k]){ state.charts[k].destroy(); state.charts[k]=null; }
+  });
+}
+const rxTip={callbacks:{label:c=>` ${c.dataset.label?c.dataset.label+': ':''}${Number(c.parsed.y!==undefined&&c.parsed.y!==null?c.parsed.y:c.parsed).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}`}};
+const rxLegenda={position:'bottom',labels:{boxWidth:10,boxHeight:10,usePointStyle:true,pointStyle:'rectRounded',padding:12,font:{size:12}}};
+const rxEixoY={beginAtZero:true,grid:{drawBorder:false},ticks:{maxTicksLimit:5,callback:v=>v>=1000?(v/1000).toLocaleString('pt-BR')+' mil':v}};
+function rxCanvas(id, h){ return `<div class="rxChart" style="height:${h||220}px"><canvas id="${id}" role="img"></canvas></div>`; }
+function rxCard(id, titulo, sub, corpo){
+  return `<section class="card rxCard" id="${id}"><h3 class="rxT">${titulo}</h3>${sub?`<p class="rxS">${sub}</p>`:''}${corpo}</section>`;
+}
+
+/* ---------- barra de filtros ---------- */
+function rxBarra(){
+  const per=document.getElementById('rxPer');
+  per.innerHTML=RX_PERIODOS.map(([id,nome])=>
+    `<button type="button" class="rxPill${rx.per===id?' on':''}" data-per="${id}">${nome}</button>`).join('');
+  per.querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    if(b.dataset.per==='custom'){ rxAbreSheet('periodo'); return; }
+    rx.per=b.dataset.per; rxSalva(); rxRender();
+  });
+  const marca=(id,qtd)=>{
+    const el=document.getElementById(id);
+    el.classList.toggle('on',qtd>0);
+    el.querySelector('b').textContent=qtd>0?qtd:'';
+  };
+  marca('rxBtnCats',rx.cats.length); marca('rxBtnPag',rx.pag.length); marca('rxBtnGrp',rx.grp.length);
+  document.getElementById('rxClear').classList.toggle('hidden', !rxFiltrosAtivos());
+}
+function rxResumoLinha(p){
+  const partes=[];
+  partes.push(rx.cats.length ? (rx.cats.length<=2?rx.cats.join(' + '):rx.cats.length+' categorias') : 'todas as categorias');
+  if(rx.pag.length) partes.push(rx.pag.map(x=>(RX_PAGS.find(p=>p[0]===x)||[,x])[1].replace('💳 ','').replace('⚡ ','')).join(' + '));
+  if(rx.grp.length) partes.push(rx.grp.map(x=>RX_GRUPOS.find(g=>g.id===x).nome).join(' + '));
+  return `<b>${esc(p.label)}</b> · ${esc(partes.join(' · '))}`;
+}
+
+/* ---------- render principal ---------- */
+function abrirRelatorios(){ rxRender(); }
+async function rxRender(){
+  if(!state.uid) return;
+  const meu=++rx.seq;
+  const corpo=document.getElementById('rxBody');
+  rxBarra();
+  if(!rx.ctx) corpo.innerHTML='<div class="empty">Montando o seu raio-X…</div>';
+  try{
+    const p0=rxPeriodo();
+    const buscaIni = p0.tudo ? '2000-01' : shiftMes(p0.ini, -mesesEntre(p0.ini,p0.fim).length);
+    const todos=await rxBusca(buscaIni, p0.fim);
+    if(meu!==rx.seq) return; // outra renderização começou depois
+    const p=rxFinalizaPeriodo(p0, todos);
+    document.getElementById('rxSum').innerHTML=rxResumoLinha(p);
+
+    const doPeriodo=todos.filter(t=>rxEntre(t,p.ini,p.fim));
+    const doPrev = p.prev ? todos.filter(t=>rxEntre(t,p.prev.ini,p.prev.fim)) : [];
+    const desp=doPeriodo.filter(t=>rxPassa(t));
+    const despPrev=doPrev.filter(t=>rxPassa(t));
+    const receitas=doPeriodo.filter(t=>t.tipo==='receita');
+
+    // cor fixa por categoria: as 8 maiores do período inteiro (sem filtro de categoria)
+    const base=doPeriodo.filter(t=>t.tipo==='despesa');
+    const rank=agrupar(base,t=>t.cat).sort((a,b)=>b.total-a.total);
+    rx.cor={}; rank.forEach((r,i)=>rx.cor[r.k]=i);
+    rx.ctx={p, todos, doPeriodo, doPrev, desp, despPrev, receitas};
+
+    if(!doPeriodo.length){
+      rxLimpaGraficos('rx');
+      corpo.innerHTML=`<div class="card"><div class="empty">Nenhum lançamento em ${esc(p.label)}.<br>Mude o período lá em cima ou toque em <b>+</b> para lançar.</div></div>`;
       return;
     }
-
-    const bk=relBuckets(mIni,mFim);
-    relEvolucao(txs, bk);        // gráfico 1: receitas × despesas no tempo
-    relDistribuicao(txs);        // gráfico 2: rosca por categoria (some com categoria específica)
-    relLinhasCategorias(txs, bk);// gráfico 3: linhas categoria a categoria
-    tabela.innerHTML = tabelaTempoHTML(bk) + (rel.cat ? '' : tabelasCategoriaHTML(txs));
+    if(!desp.length){
+      rxLimpaGraficos('rx');
+      corpo.innerHTML=`<div class="card"><div class="empty">Nenhum gasto com esses filtros em ${esc(p.label)}.<br>Toque em <b>Limpar</b> para ver tudo de novo.</div></div>`;
+      return;
+    }
+    rxLimpaGraficos('rx');
+    corpo.innerHTML=[
+      rxHeroHTML(rx.ctx),
+      rxMudouHTML(rx.ctx),
+      rxRankingHTML(rx.ctx),
+      rxPerfilHTML(rx.ctx),
+      rxTempoHTML(rx.ctx),
+      rxRitmoHTML(),
+      rxCalendarioHTML(),
+      rxSemanaHTML(rx.ctx),
+      rxPagamentoHTML(rx.ctx),
+      rxPoupancaHTML(rx.ctx),
+      rxSimuladorHTML(rx.ctx),
+      rxDetalhesHTML(rx.ctx),
+    ].join('');
+    rxLigaEventos();
+    rxGraficoPerfil(rx.ctx);
+    rxGraficoTempo(rx.ctx);
+    rxGraficoSemana(rx.ctx);
+    rxGraficoPoupanca(rx.ctx);
+    rxPreparaRitmo(meu);
+    rxLigaCalendario();
   }catch(ex){
-    tabela.innerHTML='<div class="empty">Não consegui montar o relatório agora. Tente de novo.</div>';
-    console.error('relatorio:', ex);
-  }finally{ relBusy=false; }
+    console.error('raiox:',ex);
+    corpo.innerHTML='<div class="card"><div class="empty">Não consegui montar o raio-X agora. Tente de novo.</div></div>';
+  }
+}
+function agrupar(arr, chave){
+  const m=new Map();
+  arr.forEach(t=>{
+    const k=chave(t);
+    if(!m.has(k)) m.set(k,{k,total:0,qtd:0,itens:[]});
+    const g=m.get(k); g.total+=t.valor; g.qtd++; g.itens.push(t);
+  });
+  return [...m.values()];
+}
+const rxCorCat=c=>vzCor(rx.cor && rx.cor[c]!==undefined ? rx.cor[c] : 99);
+
+/* ---------- 1. herói: quanto sai da vida ---------- */
+function rxHeroHTML({p,desp,despPrev,receitas,doPeriodo}){
+  const total=rxSoma(desp), prev=rxSoma(despPrev);
+  const rec=rxSoma(receitas);
+  const porDia=total/p.dias;
+  const maior=[...desp].sort((a,b)=>b.valor-a.valor)[0];
+  const filtrado=rxFiltrosAtivos()>0;
+  let renda='';
+  if(rec>0){
+    const r=pct(total,rec);
+    const dias=Math.round(Math.min(r,100)/100*21);
+    renda=`<div class="rxRenda">
+      <div class="rxRendaT">De cada <b>R$ 100</b> que entram, <b>R$ ${Math.round(r)}</b> ${filtrado?'vão para estes gastos':'saem'}.</div>
+      <div class="rxRendaBar" role="img" aria-label="${Math.round(r)}% da renda"><span style="width:${Math.min(r,100)}%"></span></div>
+      <div class="rxRendaS">Ou seja, cerca de <b>${dias} de 21</b> dias úteis de trabalho por mês pagam ${filtrado?'isso':'as suas contas'}.</div>
+    </div>`;
+  }
+  return `<section class="card rxHero" id="rxHero">
+    <div class="rxHeroL">Você gastou · ${esc(p.label)}</div>
+    <div class="rxHeroV">${fmt(total)}</div>
+    <div class="rxHeroD">${prev>0?deltaHTML(total,prev)+` <span class="rxMut">vs ${p.n===1?'mês anterior':'período anterior'} (${fmt(prev)})</span>`:'<span class="rxMut">sem período anterior para comparar</span>'}</div>
+    <div class="rxTiles">
+      <div><span>Por dia</span><b>${fmtInt(porDia)}</b></div>
+      ${p.n>1?`<div><span>Por mês</span><b>${fmtInt(total/p.n)}</b></div>`:`<div><span>Lançamentos</span><b>${desp.length}</b></div>`}
+      <div><span>Maior gasto</span><b>${maior?fmtInt(maior.valor):'—'}</b></div>
+    </div>
+    ${renda}
+  </section>`;
 }
 
-/* gráfico 1: receitas × despesas ao longo do tempo (respeita o filtro de categoria) */
-function relEvolucao(txs, bk){
-  const agg={}; bk.labels.forEach(l=>agg[l]={rec:0,desp:0});
-  txs.forEach(t=>{
-    const b=agg[bk.chave(t)]; if(!b) return;
-    if(t.tipo==='receita') b.rec+=t.valor; else b.desp+=t.valor;
-  });
-  bk.agg=agg; // reaproveitado pela tabela de detalhes
-  document.getElementById('relChartTitle').textContent=
-    (rel.modo==='mensal'?'Evolução mensal':'Movimento por dia')+(rel.cat?` — ${rel.cat}`:'');
-  mkChart('rel','chartRel',{type:'bar',
-    data:{labels:bk.labels.map(relBucketLbl),datasets:[
-      {label:'Receitas',data:bk.labels.map(l=>agg[l].rec/100),backgroundColor:'#00C87B',borderRadius:5},
-      {label:'Despesas',data:bk.labels.map(l=>agg[l].desp/100),backgroundColor:'#FF5C4D',borderRadius:5},
-    ]},
-    options:{maintainAspectRatio:false,
-      plugins:{legend:{labels:{boxWidth:12,font:{family:'Schibsted Grotesk'}}},tooltip:relTooltip},
-      scales:{y:{ticks:{callback:moedaCB}}}}
-  });
+/* ---------- 2. o que mudou ---------- */
+function rxMudouHTML({p,doPeriodo,doPrev}){
+  if(!p.prev || !doPrev.length) return '';
+  const a=new Map(), b=new Map();
+  doPeriodo.filter(t=>rxPassa(t,{semCats:true})).forEach(t=>a.set(t.cat,(a.get(t.cat)||0)+t.valor));
+  doPrev.filter(t=>rxPassa(t,{semCats:true})).forEach(t=>b.set(t.cat,(b.get(t.cat)||0)+t.valor));
+  const cats=new Set([...a.keys(),...b.keys()]);
+  const difs=[...cats].map(c=>({c, cur:a.get(c)||0, ant:b.get(c)||0, d:(a.get(c)||0)-(b.get(c)||0)}))
+    .filter(x=>Math.abs(x.d)>=100);
+  if(!difs.length) return '';
+  const sobem=difs.filter(x=>x.d>0).sort((x,y)=>y.d-x.d).slice(0,4);
+  const descem=difs.filter(x=>x.d<0).sort((x,y)=>x.d-y.d).slice(0,4);
+  const max=Math.max(...[...sobem,...descem].map(x=>Math.abs(x.d)));
+  const linha=x=>`<button type="button" class="rxVar ${x.d>0?'sobe':'desce'}" data-cat="${esc(x.c)}">
+      <span class="n"><i style="background:${rxCorCat(x.c)}"></i>${esc(x.c)}</span>
+      <span class="b"><span style="width:${Math.max(4,Math.abs(x.d)/max*100)}%"></span></span>
+      <span class="v">${x.d>0?'+':'−'}${fmtInt(Math.abs(x.d))}${x.ant>0?` <small>${x.d>0?'+':'−'}${Math.round(Math.abs(x.d)/x.ant*100)}%</small>`:' <small>novo</small>'}</span>
+    </button>`;
+  const top=sobem[0];
+  const frase = top ? `Quem mais pesou a mais: <b>${esc(top.c)}</b> (+${fmtInt(top.d)}).` : `Nenhuma categoria subiu — bom sinal.`;
+  return rxCard('rxMudou','O que mudou',`${frase} Comparado a ${p.n===1?'mês anterior':'período anterior'}.`,
+    `${sobem.length?`<div class="rxVarT">Subiu</div>${sobem.map(linha).join('')}`:''}
+     ${descem.length?`<div class="rxVarT">Caiu</div>${descem.map(linha).join('')}`:''}`);
 }
 
-/* tabela de detalhes por período (usa o agg calculado em relEvolucao) */
-function tabelaTempoHTML(bk){
-  const linhas=bk.labels.filter(l=>bk.agg[l].rec||bk.agg[l].desp);
-  const nomeLinha=l=>rel.modo==='mensal'
-    ? mesLabel(l)
-    : new Date(l+'T12:00').toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'});
-  let totR=0,totD=0;
-  const rows=linhas.map(l=>{
-    const b=bk.agg[l]; totR+=b.rec; totD+=b.desp;
-    const s=b.rec-b.desp;
-    return `<tr><td>${esc(nomeLinha(l))}</td>
-      <td class="num pos">${b.rec?fmt(b.rec):'—'}</td>
-      <td class="num neg">${b.desp?fmt(b.desp):'—'}</td>
-      <td class="num ${s>=0?'pos':'neg'}">${fmt(s)}</td></tr>`;
+/* ---------- 3. ranking: para onde vai cada R$ 100 ---------- */
+function rxRankingHTML({p,doPeriodo,doPrev}){
+  const atual=agrupar(doPeriodo.filter(t=>rxPassa(t,{semCats:true})),t=>t.cat).sort((a,b)=>b.total-a.total);
+  if(!atual.length) return '';
+  const totalTudo=atual.reduce((s,g)=>s+g.total,0);
+  const ant=new Map(); doPrev.filter(t=>rxPassa(t,{semCats:true})).forEach(t=>ant.set(t.cat,(ant.get(t.cat)||0)+t.valor));
+  const max=atual[0].total;
+  const mostra = rx.todas ? atual : atual.slice(0,7);
+  const linhas=mostra.map(g=>{
+    const sel=rx.cats.includes(g.k);
+    return `<button type="button" class="rxRow${sel?' sel':''}${rx.cats.length&&!sel?' dim':''}" data-cat="${esc(g.k)}" aria-pressed="${sel}">
+      <span class="top"><span class="n"><i style="background:${rxCorCat(g.k)}"></i>${esc(g.k)}</span>
+        <span class="v">${fmt(g.total)}</span></span>
+      <span class="b"><span style="width:${Math.max(2,g.total/max*100)}%;background:${rxCorCat(g.k)}"></span></span>
+      <span class="sub"><span>${pct1(pct(g.total,totalTudo))} do total · ${g.qtd} lanç.</span>${p.prev?deltaHTML(g.total,ant.get(g.k)||0):''}</span>
+    </button>`;
   }).join('');
-  return `<div class="relGrupo">Por ${rel.modo==='mensal'?'mês':'dia'}${rel.cat?` — ${esc(rel.cat)}`:''}</div>
-  <div class="relTableWrap"><table class="relTable">
-    <thead><tr><th>${rel.modo==='mensal'?'Mês':'Dia'}</th><th class="num">Receitas</th><th class="num">Despesas</th><th class="num">Saldo</th></tr></thead>
-    <tbody>${rows}
-    <tr class="totRow"><td>Total</td><td class="num pos">${fmt(totR)}</td><td class="num neg">${fmt(totD)}</td>
-      <td class="num ${totR-totD>=0?'pos':'neg'}">${fmt(totR-totD)}</td></tr></tbody>
-  </table></div>`;
+  const r100 = atual.slice(0,3).map(g=>`R$ ${Math.round(pct(g.total,totalTudo))} em ${esc(g.k)}`).join(', ');
+  return rxCard('rxRank','Para onde vai cada R$ 100',
+    `Dos seus gastos, ${r100}. <span class="rxMut">Toque numa categoria para filtrar tudo.</span>`,
+    `<div class="rxRows">${linhas}</div>
+     ${atual.length>7?`<button type="button" class="rxMais" id="rxMais">${rx.todas?'Ver menos':`Ver todas (${atual.length})`}</button>`:''}`);
 }
 
-/* gráfico 2: rosca da distribuição por categoria (some quando há categoria filtrada) */
-function relDistribuicao(txs){
-  if(rel.cat){ relBoxVisivel('relDonutBox','relDonut',false); return; }
-  const despCats=aggCats(txs,'despesa');
-  const base=despCats.length ? despCats : aggCats(txs,'receita');
-  if(!base.length){ relBoxVisivel('relDonutBox','relDonut',false); return; }
-  document.getElementById('relDonutTitle').textContent=
-    'Distribuição — '+(despCats.length?'despesas':'receitas')+' por categoria';
-  relBoxVisivel('relDonutBox','relDonut',true);
-  mkChart('relDonut','chartRelDonut',{type:'doughnut',
-    data:{labels:base.map(([c])=>c),
-      datasets:[{data:base.map(([,v])=>v.total/100),
-        backgroundColor:base.map((_,i)=>CAT_COLORS[i%CAT_COLORS.length]),borderWidth:0}]},
-    options:{maintainAspectRatio:false,cutout:'62%',
-      plugins:{legend:{position:'right',labels:{boxWidth:12,font:{family:'Schibsted Grotesk'}}},tooltip:relTooltip}}
-  });
+/* ---------- 4. perfil do gasto (essencial / bem-estar / prazer) ---------- */
+function rxPerfilTotais(arr){
+  const o={ess:0,bem:0,pra:0};
+  arr.forEach(t=>o[rxGrupoDe(t.cat)]+=t.valor);
+  return o;
 }
-
-/* gráfico 3: linhas — eixo X com os meses (ou dias), uma linha por categoria */
-function relLinhasCategorias(txs, bk){
-  const tipoBase = txs.some(t=>t.tipo==='despesa') ? 'despesa' : 'receita';
-  const base=aggCats(txs, tipoBase); // ordem decrescente = cores iguais às da rosca
-  if(!base.length){ relBoxVisivel('relLinhaBox','relLinha',false); return; }
-  const idx={}; bk.labels.forEach((l,i)=>idx[l]=i);
-  const serie={}; base.forEach(([c])=>serie[c]=bk.labels.map(()=>0));
-  txs.forEach(t=>{
-    if(t.tipo!==tipoBase || !serie[t.cat]) return;
-    const i=idx[bk.chave(t)]; if(i!==undefined) serie[t.cat][i]+=t.valor;
-  });
-  document.getElementById('relLinhaTitle').textContent=
-    (tipoBase==='despesa'?'Despesas':'Receitas')+' por categoria — '+(rel.modo==='mensal'?'mês a mês':'dia a dia');
-  relBoxVisivel('relLinhaBox','relLinha',true);
-  mkChart('relLinha','chartRelLinha',{type:'line',
-    data:{labels:bk.labels.map(relBucketLbl),
-      datasets:base.map(([c],i)=>({label:c, data:serie[c].map(v=>v/100),
-        borderColor:CAT_COLORS[i%CAT_COLORS.length],
-        backgroundColor:CAT_COLORS[i%CAT_COLORS.length],
-        borderWidth:2, pointRadius:3, tension:.3}))},
+function rxPerfilHTML({p,desp,despPrev}){
+  const t=rxPerfilTotais(desp), tp=rxPerfilTotais(despPrev);
+  const tot=t.ess+t.bem+t.pra, totp=tp.ess+tp.bem+tp.pra;
+  if(!tot) return '';
+  const cores=[vzCor(0),vzCor(2),vzCor(1)];
+  const seg=RX_GRUPOS.map((g,i)=>t[g.id]>0?`<span style="width:${pct(t[g.id],tot)}%;background:${cores[i]}" title="${g.nome}"></span>`:'').join('');
+  const linhas=RX_GRUPOS.map((g,i)=>{
+    const pp=pct(t[g.id],tot), pa=totp?pct(tp[g.id],totp):null;
+    const dpp = pa===null ? '' : (()=>{ const d=pp-pa; if(Math.abs(d)<0.5) return '<span class="rxDelta igual">= igual</span>';
+      return `<span class="rxDelta ${g.id==='pra'?(d>0?'ruim':'bom'):'igual'}">${d>0?'▲':'▼'} ${Math.abs(d).toFixed(0)} pp</span>`; })();
+    return `<div class="rxPerf"><i style="background:${cores[i]}"></i>
+      <div class="x"><b>${g.emoji} ${g.nome}</b><small>${g.desc}</small></div>
+      <div class="y"><b>${fmtInt(t[g.id])}</b><small>${pct1(pp)} ${dpp}</small></div></div>`;
+  }).join('');
+  const pr=pct(t.pra,tot);
+  const frase = pr>=40 ? `<b>${pct1(pr)}</b> do que você gasta é Prazer — é aqui que está a sua maior margem para mudar.`
+              : pr>=25 ? `<b>${pct1(pr)}</b> vai para o Prazer. Equilíbrio razoável, dá para ajustar o que pesa mais.`
+              : `Só <b>${pct1(pr)}</b> vai para o Prazer: a maior parte dos gastos sustenta a vida.`;
+  return rxCard('rxPerfil','Perfil do seu gasto',
+    `${frase} <button type="button" class="rxLink" data-sheet="grp">Ajustar perfis</button>`,
+    `<div class="rxSeg" role="img" aria-label="Essencial ${pct1(pct(t.ess,tot))}, Bem-estar ${pct1(pct(t.bem,tot))}, Prazer ${pct1(pr)}">${seg}</div>
+     <div class="rxPerfs">${linhas}</div>
+     ${p.n>1?rxCanvas('chartRxPerfil',200):''}`);
+}
+function rxGraficoPerfil({p,desp}){
+  if(p.n<2 || !document.getElementById('chartRxPerfil')) return;
+  const cores=[vzCor(0),vzCor(2),vzCor(1)];
+  const por=p.meses.map(m=>rxPerfilTotais(desp.filter(t=>t.mes===m)));
+  mkChart('rxPerfil','chartRxPerfil',{type:'bar',
+    data:{labels:p.meses.map(mesCurto),datasets:RX_GRUPOS.map((g,i)=>({
+      label:g.nome, backgroundColor:cores[i], borderRadius:3, borderSkipped:false, borderColor:'transparent', borderWidth:0,
+      data:por.map(o=>{ const s=o.ess+o.bem+o.pra; return s?o[g.id]/s*100:0; }), valor:por.map(o=>o[g.id]/100)}))},
     options:{maintainAspectRatio:false,
-      plugins:{legend:{labels:{boxWidth:12,font:{family:'Schibsted Grotesk'}}},tooltip:relTooltip},
-      scales:{y:{ticks:{callback:moedaCB}}}}
-  });
+      plugins:{legend:rxLegenda,tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y.toFixed(0)}% · ${c.dataset.valor[c.dataIndex].toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}`}}},
+      scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,max:100,ticks:{callback:v=>v+'%',maxTicksLimit:5},grid:{drawBorder:false}}}}});
 }
 
-/* tabelas de detalhes por categoria (despesas e receitas) */
-function tabelasCategoriaHTML(txs){
-  const grupo=(titulo, cats, cls)=>{
-    if(!cats.length) return '';
-    const tot=cats.reduce((a,[,v])=>a+v.total,0);
-    return `<div class="relGrupo">${titulo}</div><div class="relTableWrap"><table class="relTable">
-      <thead><tr><th>Categoria</th><th class="num">Total</th><th class="num">%</th><th class="num">Lançamentos</th></tr></thead>
-      <tbody>${cats.map(([c,v])=>`<tr><td>${esc(c)}</td>
-        <td class="num ${cls}">${fmt(v.total)}</td>
-        <td class="num">${(v.total/tot*100).toFixed(1).replace('.',',')}%</td>
-        <td class="num">${v.qtd}</td></tr>`).join('')}
-      <tr class="totRow"><td>Total</td><td class="num ${cls}">${fmt(tot)}</td><td class="num">100%</td>
-        <td class="num">${cats.reduce((a,[,v])=>a+v.qtd,0)}</td></tr></tbody>
-    </table></div>`;
+/* ---------- 5. no tempo: empilhado por categoria ---------- */
+function rxTempoHTML({p,desp}){
+  const diario = p.n===1;
+  const titulo = diario ? 'Dia a dia do mês' : 'Mês a mês, por categoria';
+  const por=new Map(); desp.forEach(t=>por.set(t.mes,(por.get(t.mes)||0)+t.valor));
+  const vals=p.meses.map(m=>por.get(m)||0).filter(v=>v>0);
+  let frase='';
+  if(!diario && vals.length>1){
+    const maiorM=p.meses.reduce((a,m)=>(por.get(m)||0)>(por.get(a)||0)?m:a,p.meses[0]);
+    const media=vals.reduce((a,b)=>a+b,0)/vals.length;
+    frase=`O mês mais pesado foi <b>${mesLabel(maiorM)}</b> (${fmtInt(por.get(maiorM))}), ${pct1(pct(por.get(maiorM),media)-100)} acima da sua média de ${fmtInt(media)}.`;
+  }else if(diario){
+    const dias=agrupar(desp,t=>t.data).sort((a,b)=>b.total-a.total);
+    if(dias[0]) frase=`O dia mais caro foi <b>${dias[0].k.slice(8)}/${dias[0].k.slice(5,7)}</b> (${fmtInt(dias[0].total)}).`;
+  }
+  return rxCard('rxTempo',titulo,frase,rxCanvas('chartRxTempo',250));
+}
+function rxGraficoTempo({p,desp}){
+  const diario=p.n===1;
+  const rotulos = diario ? [...Array(diasDoMes(p.ini))].map((_,i)=>String(i+1)) : p.meses.map(mesCurto);
+  const idx = t => diario ? +t.data.slice(8)-1 : p.meses.indexOf(t.mes);
+  // até 6 categorias com cor própria + "Demais" em cinza
+  const porCat=agrupar(desp,t=>t.cat).sort((a,b)=>b.total-a.total);
+  const fortes=porCat.slice(0,6).map(g=>g.k);
+  const series=[...fortes, ...(porCat.length>6?['Demais']:[])];
+  const dados={}; series.forEach(s=>dados[s]=rotulos.map(()=>0));
+  desp.forEach(t=>{ const i=idx(t); if(i<0) return; const s=fortes.includes(t.cat)?t.cat:'Demais'; dados[s][i]+=t.valor/100; });
+  mkChart('rxTempo','chartRxTempo',{type:'bar',
+    data:{labels:rotulos,datasets:series.map(s=>({label:s,data:dados[s],
+      backgroundColor:s==='Demais'?vzCor(99):rxCorCat(s),borderRadius:2,borderSkipped:false,borderColor:'transparent',borderWidth:0,maxBarThickness:36}))},
+    options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      plugins:{legend:rxLegenda,tooltip:{callbacks:{label:c=>c.parsed.y>0?` ${c.dataset.label}: ${c.parsed.y.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}`:null,
+        footer:items=>'Total: '+items.reduce((a,i)=>a+i.parsed.y,0).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}}},
+      scales:{x:{stacked:true,grid:{display:false},ticks:{autoSkip:true,maxRotation:0}},y:{stacked:true,...rxEixoY}}}});
+}
+
+/* ---------- 6. ritmo do mês de referência ---------- */
+function rxRitmoHTML(){
+  return rxCard('rxRitmo','Ritmo do mês','<span id="rxRitmoS">Carregando…</span>',rxCanvas('chartRxRitmo',230));
+}
+async function rxPreparaRitmo(meu){
+  const ref=state.mes, ant=shiftMes(ref,-1);
+  const txs=(await rxBusca(ant,ref));
+  if(meu!==rx.seq) return;
+  const f=(m)=>txs.filter(t=>t.mes===m && rxPassa(t));
+  const cur=f(ref), prev=f(ant);
+  const dim=diasDoMes(ref), dimA=diasDoMes(ant);
+  const acum=(arr,n)=>{ const d=Array(n).fill(0); arr.forEach(t=>d[+t.data.slice(8)-1]+=t.valor); let s=0; return d.map(v=>(s+=v)/100); };
+  const ehAtual=ref===mesAtual();
+  const passados = ehAtual ? new Date().getDate() : dim;
+  const c=acum(cur,dim), a=acum(prev,dimA);
+  const totalCur=c[passados-1]*100;
+  const labels=[...Array(Math.max(dim,dimA))].map((_,i)=>String(i+1));
+  const serieCur=labels.map((_,i)=> i<passados ? c[i] : null);
+  const proj = ehAtual && passados>=3 && passados<dim ? (totalCur/passados*dim) : null;
+  const serieProj = proj ? labels.map((_,i)=> i===passados-1 ? c[i] : (i>=passados && i<dim ? c[passados-1]+(proj/100-c[passados-1])*(i-passados+1)/(dim-passados) : null)) : null;
+  const totalPrev=a[dimA-1]*100;
+  let frase;
+  if(!cur.length && !prev.length) frase='Sem gastos nesses dois meses com estes filtros.';
+  else if(proj){
+    const d=totalPrev>0?(proj-totalPrev)/totalPrev*100:null;
+    frase=`Até hoje: <b>${fmtInt(totalCur)}</b>. Neste ritmo você fecha ${mesLabel(ref)} em <b>${fmtInt(proj)}</b>${d===null?'':`, ${pct1(Math.abs(d))} ${d>0?'<span class="rxDelta ruim">acima</span>':'<span class="rxDelta bom">abaixo</span>'} do mês passado (${fmtInt(totalPrev)})`}.`;
+  }else{
+    const d=totalPrev>0?(totalCur-totalPrev)/totalPrev*100:null;
+    frase=`${mesLabel(ref)} fechou em <b>${fmtInt(totalCur)}</b>${d===null?'':`, ${pct1(Math.abs(d))} ${d>0?'<span class="rxDelta ruim">acima</span>':'<span class="rxDelta bom">abaixo</span>'} de ${mesLabel(ant)} (${fmtInt(totalPrev)})`}.`;
+  }
+  const el=document.getElementById('rxRitmoS'); if(el) el.innerHTML=frase+' <span class="rxMut">Mostra sempre o mês do topo da tela.</span>';
+  if(!document.getElementById('chartRxRitmo')) return;
+  const ds=[
+    {label:mesCurto(ant),data:labels.map((_,i)=>i<dimA?a[i]:null),borderColor:vzCor(99),backgroundColor:vzCor(99),borderWidth:2,pointRadius:0,tension:.25},
+    {label:mesCurto(ref),data:serieCur,borderColor:vzCor(0),backgroundColor:vzCor(0),borderWidth:2.5,pointRadius:0,tension:.25},
+  ];
+  if(serieProj) ds.push({label:'Projeção',data:serieProj,borderColor:vzCor(0),backgroundColor:vzCor(0),borderWidth:2,borderDash:[5,4],pointRadius:0});
+  mkChart('rxRitmo','chartRxRitmo',{type:'line',data:{labels,datasets:ds},
+    options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      plugins:{legend:rxLegenda,tooltip:{callbacks:{title:i=>'Dia '+i[0].label,label:c=>c.parsed.y===null?null:` ${c.dataset.label}: ${c.parsed.y.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}`}}},
+      scales:{x:{grid:{display:false},ticks:{autoSkip:true,maxTicksLimit:8,maxRotation:0}},y:rxEixoY}}});
+}
+
+/* ---------- 7. calendário de calor ---------- */
+function rxCalendarioHTML(){
+  return rxCard('rxCal','Calendário de gastos','<span id="rxCalS">Carregando…</span>','<div id="rxCalBox"></div><div id="rxCalDia" class="rxCalDia"></div>');
+}
+async function rxLigaCalendario(){
+  const meu=rx.seq, ref=state.mes;
+  const txs=(await rxBusca(shiftMes(ref,-1),ref)).filter(t=>t.mes===ref && rxPassa(t));
+  if(meu!==rx.seq) return;
+  const porDia=new Map(); txs.forEach(t=>porDia.set(t.data,(porDia.get(t.data)||0)+t.valor));
+  const max=Math.max(0,...porDia.values());
+  const dim=diasDoMes(ref), inicio=new Date(+ref.slice(0,4),+ref.slice(5,7)-1,1).getDay();
+  const cor=vzCor(0);
+  let h='<div class="rxCal">'+RX_DIAS.map(d=>`<div class="h">${d[0].toUpperCase()}</div>`).join('');
+  for(let i=0;i<inicio;i++) h+='<div></div>';
+  for(let d=1; d<=dim; d++){
+    const iso=ref+'-'+String(d).padStart(2,'0'), v=porDia.get(iso)||0;
+    const nivel = !v ? 0 : Math.min(4, 1+Math.floor(v/max*3.999));
+    const alpha=[0,22,42,68,100][nivel];
+    h+=`<button type="button" class="d n${nivel}${rx.diaSel===iso?' sel':''}" data-dia="${iso}" style="${v?`background:color-mix(in srgb, ${cor} ${alpha}%, transparent)`:''}" aria-label="${d}: ${fmt(v)}"><span>${d}</span></button>`;
+  }
+  h+='</div><div class="rxCalLeg"><span>menos</span>'+[22,42,68,100].map(a=>`<i style="background:color-mix(in srgb, ${cor} ${a}%, transparent)"></i>`).join('')+'<span>mais</span></div>';
+  document.getElementById('rxCalBox').innerHTML=h;
+  const dias=[...porDia.entries()].sort((a,b)=>b[1]-a[1]);
+  const total=txs.reduce((s,t)=>s+t.valor,0);
+  const semGasto = [...Array(Math.min(dim, diasUteisMes(ref)))].filter((_,i)=>!porDia.has(ref+'-'+String(i+1).padStart(2,'0'))).length;
+  document.getElementById('rxCalS').innerHTML = txs.length
+    ? `Em ${mesLabel(ref)}, <b>${semGasto}</b> dia${semGasto===1?'':'s'} sem gastar nada${dias[0]?` e o dia mais pesado foi <b>${dias[0][0].slice(8)}</b> (${fmtInt(dias[0][1])}, ${pct1(pct(dias[0][1],total))} do mês)`:''}. <span class="rxMut">Toque num dia.</span>`
+    : `Sem gastos em ${mesLabel(ref)} com estes filtros.`;
+  const mostra=iso=>{
+    rx.diaSel=iso;
+    document.querySelectorAll('#rxCalBox .d').forEach(b=>b.classList.toggle('sel',b.dataset.dia===iso));
+    const lista=txs.filter(t=>t.data===iso);
+    const dt=new Date(iso+'T12:00');
+    document.getElementById('rxCalDia').innerHTML = `<div class="rxCalDiaT">${dt.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})} · <b>${fmt(rxSoma(lista))}</b></div>`+
+      (lista.length ? lista.sort((a,b)=>b.valor-a.valor).map(t=>`<div class="rxCalIt"><span>${esc(t.desc)} <small>${esc(t.cat)}</small></span><b>${fmt(t.valor)}</b></div>`).join('') : '<div class="rxMut" style="padding:6px 0">Nenhum gasto neste dia 🎉</div>');
   };
-  return grupo('Despesas por categoria', aggCats(txs,'despesa'), 'neg')
-       + grupo('Receitas por categoria', aggCats(txs,'receita'), 'pos');
+  document.querySelectorAll('#rxCalBox .d').forEach(b=>b.onclick=()=>mostra(b.dataset.dia));
+  if(rx.diaSel && rx.diaSel.startsWith(ref)) mostra(rx.diaSel);
+}
+
+/* ---------- 8. dia da semana ---------- */
+function rxSemanaDados({p,desp}){
+  const n=rxDiaSemanaN(p.ini,p.fim);
+  const tot=[0,0,0,0,0,0,0]; desp.forEach(t=>tot[new Date(t.data+'T12:00').getDay()]+=t.valor);
+  return {tot, med:tot.map((v,i)=>n[i]?v/n[i]:0)};
+}
+function rxSemanaHTML(c){
+  const {tot}=rxSemanaDados(c);
+  const soma=tot.reduce((a,b)=>a+b,0); if(!soma) return '';
+  const ord=tot.map((v,i)=>[v,i]).sort((a,b)=>b[0]-a[0]);
+  const fds=pct(tot[0]+tot[6]+tot[5],soma);
+  return rxCard('rxSemana','Em que dia da semana você gasta',
+    `<b>${RX_DIAS[ord[0][1]]}</b> e <b>${RX_DIAS[ord[1][1]]}</b> concentram ${pct1(pct(ord[0][0]+ord[1][0],soma))} do total. Sexta a domingo: ${pct1(fds)}. <span class="rxMut">Barras = gasto médio por dia daquele tipo.</span>`,
+    rxCanvas('chartRxSemana',200));
+}
+function rxGraficoSemana(c){
+  if(!document.getElementById('chartRxSemana')) return;
+  const {med}=rxSemanaDados(c);
+  mkChart('rxSemana','chartRxSemana',{type:'bar',
+    data:{labels:RX_DIAS,datasets:[{label:'Média por dia',data:med.map(v=>v/100),backgroundColor:vzCor(0),borderRadius:5,borderSkipped:false,maxBarThickness:34}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:rxTip},
+      scales:{x:{grid:{display:false}},y:rxEixoY}}});
+}
+
+/* ---------- 9. forma de pagamento ---------- */
+function rxPagamentoHTML({desp}){
+  const g=agrupar(desp,t=>t.pagamento||'outro').sort((a,b)=>b.total-a.total);
+  if(!g.length || (g.length===1 && g[0].k==='outro')) return '';
+  const tot=g.reduce((a,x)=>a+x.total,0);
+  const nome=k=>(RX_PAGS.find(p=>p[0]===k)||[k,k])[1];
+  const credito=g.find(x=>x.k==='credito');
+  const frase = credito ? `<b>${pct1(pct(credito.total,tot))}</b> dos gastos vão no crédito — dinheiro que sai depois e pesa em outro mês.` : 'Quase nada no crédito: o que você gasta já sai na hora.';
+  return rxCard('rxPag','Como você paga',frase,
+    `<div class="rxSeg">${g.map((x,i)=>`<span style="width:${pct(x.total,tot)}%;background:${vzCor(i)}"></span>`).join('')}</div>
+     ${g.map((x,i)=>`<div class="rxPerf"><i style="background:${vzCor(i)}"></i><div class="x"><b>${nome(x.k)}</b><small>${x.qtd} lançamento${x.qtd===1?'':'s'}</small></div><div class="y"><b>${fmtInt(x.total)}</b><small>${pct1(pct(x.total,tot))}</small></div></div>`).join('')}`);
+}
+
+/* ---------- 10. poupança: quanto sobra por mês ---------- */
+function rxPoupancaDados({p,doPeriodo}){
+  return p.meses.map(m=>{
+    let rec=0,desp=0; doPeriodo.forEach(t=>{ if(t.mes!==m) return; if(t.tipo==='receita') rec+=t.valor; else desp+=t.valor; });
+    return {m,rec,desp,saldo:rec-desp};
+  });
+}
+function rxPoupancaHTML(c){
+  if(c.p.n<2) return '';
+  const d=rxPoupancaDados(c).filter(x=>x.rec||x.desp);
+  if(d.length<2) return '';
+  const rec=d.reduce((a,x)=>a+x.rec,0), desp=d.reduce((a,x)=>a+x.desp,0);
+  const vermelho=d.filter(x=>x.saldo<0).length;
+  const taxa=rec>0?(rec-desp)/rec*100:null;
+  const frase = taxa===null ? 'Sem receitas lançadas no período.' :
+    `Você guardou em média <b>${taxa.toFixed(0)}%</b> da renda${vermelho?` e fechou <b>${vermelho}</b> de ${d.length} meses no vermelho`:' e fechou todos os meses no azul'}. <span class="rxMut">Considera todas as categorias.</span>`;
+  return rxCard('rxPoup','Quanto sobra no fim do mês',frase,rxCanvas('chartRxPoup',210));
+}
+function rxGraficoPoupanca(c){
+  if(!document.getElementById('chartRxPoup')) return;
+  const d=rxPoupancaDados(c);
+  mkChart('rxPoup','chartRxPoup',{type:'bar',
+    data:{labels:d.map(x=>mesCurto(x.m)),datasets:[{label:'Saldo do mês',data:d.map(x=>x.saldo/100),
+      backgroundColor:d.map(x=>x.saldo>=0?vzCor(0):vzCor(1)),borderRadius:4,borderSkipped:false,maxBarThickness:36}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.parsed.y>=0?'Sobrou':'Faltou'} ${Math.abs(c.parsed.y).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}`}}},
+      scales:{x:{grid:{display:false}},y:{grid:{drawBorder:false},ticks:{maxTicksLimit:5,callback:v=>v>=1000||v<=-1000?(v/1000).toLocaleString('pt-BR')+' mil':v}}}}});
+}
+
+/* ---------- 11. "e se eu cortasse?" ---------- */
+function rxSimuladorHTML({p,doPeriodo,receitas}){
+  const g=agrupar(doPeriodo.filter(t=>rxPassa(t,{semCats:true})),t=>t.cat).sort((a,b)=>b.total-a.total);
+  if(!g.length) return '';
+  if(!g.some(x=>x.k===rx.simCat)) rx.simCat=(g.find(x=>rxGrupoDe(x.k)==='pra')||g[0]).k;
+  return rxCard('rxSim','E se eu cortasse?','Veja o que muda na sua vida se você gastar menos em uma categoria.',
+    `<div class="field"><label for="rxSimCat">Categoria</label><select id="rxSimCat">${g.map(x=>`<option value="${esc(x.k)}"${x.k===rx.simCat?' selected':''}>${esc(x.k)} — ${fmtInt(x.total/p.n)}/mês</option>`).join('')}</select></div>
+     <div class="rxSlider"><label for="rxSimPct">Cortar <b id="rxSimPctV">${rx.simPct}%</b></label>
+       <input type="range" id="rxSimPct" min="5" max="100" step="5" value="${rx.simPct}"></div>
+     <div class="rxSimOut" id="rxSimOut"></div>`);
+}
+function rxAtualizaSim(){
+  const c=rx.ctx; if(!c) return;
+  const out=document.getElementById('rxSimOut'); if(!out) return;
+  const tot=rxSoma(c.doPeriodo.filter(t=>t.tipo==='despesa' && t.cat===rx.simCat && rxPassa(t,{semCats:true})));
+  const mes=tot/c.p.n*rx.simPct/100, ano=mes*12;
+  const rec=rxSoma(c.receitas)/c.p.n;
+  const dias = rec>0 ? mes/(rec/21) : null;
+  const inv = ano*5; // 5 anos, sem rendimento
+  out.innerHTML=`<div class="rxSimBig"><span>por mês</span><b>${fmtInt(mes)}</b></div>
+    <div class="rxSimBig"><span>por ano</span><b>${fmtInt(ano)}</b></div>
+    <div class="rxSimTxt">Em 5 anos são <b>${fmtInt(inv)}</b> guardados (sem contar rendimento)${dias!==null?` e <b>${dias.toFixed(1).replace('.',',')}</b> dia${dias>=1.05?'s':''} de trabalho a menos por mês só para pagar ${esc(rx.simCat)}`:''}.</div>`;
+}
+
+/* ---------- 12. detalhes ---------- */
+function rxDetalhesHTML({p,desp,doPeriodo}){
+  const g=agrupar(desp,t=>t.cat).sort((a,b)=>b.total-a.total);
+  const tot=g.reduce((a,x)=>a+x.total,0);
+  const linhasC=g.map(x=>`<tr><td><i class="rxDot" style="background:${rxCorCat(x.k)}"></i>${esc(x.k)}</td><td class="num">${fmt(x.total)}</td><td class="num">${pct1(pct(x.total,tot))}</td><td class="num">${fmt(x.total/p.n)}</td><td class="num">${x.qtd}</td></tr>`).join('');
+  const meses=p.n>1 ? rxPoupancaDados({p,doPeriodo}).filter(x=>x.rec||x.desp).map(x=>`<tr><td>${esc(mesLabel(x.m))}</td><td class="num pos">${x.rec?fmt(x.rec):'—'}</td><td class="num neg">${x.desp?fmt(x.desp):'—'}</td><td class="num ${x.saldo>=0?'pos':'neg'}">${fmt(x.saldo)}</td></tr>`).join('') : '';
+  return `<details class="card rxDet"><summary>Ver tabelas</summary>
+    <div class="relGrupo">Por categoria</div>
+    <div class="relTableWrap"><table class="relTable"><thead><tr><th>Categoria</th><th class="num">Total</th><th class="num">%</th><th class="num">Por mês</th><th class="num">Lanç.</th></tr></thead>
+      <tbody>${linhasC}<tr class="totRow"><td>Total</td><td class="num neg">${fmt(tot)}</td><td class="num">100%</td><td class="num">${fmt(tot/p.n)}</td><td class="num">${desp.length}</td></tr></tbody></table></div>
+    ${meses?`<div class="relGrupo">Por mês (todas as categorias)</div><div class="relTableWrap"><table class="relTable"><thead><tr><th>Mês</th><th class="num">Receitas</th><th class="num">Despesas</th><th class="num">Saldo</th></tr></thead><tbody>${meses}</tbody></table></div>`:''}
+  </details>`;
+}
+
+/* ---------- eventos dos cards ---------- */
+function rxFiltraCat(c){
+  rx.cats = rx.cats.length===1 && rx.cats[0]===c ? [] : [c];
+  rxSalva(); rxRender();
+  document.getElementById('rxBar').scrollIntoView({block:'nearest',behavior:'smooth'});
+}
+function rxLigaEventos(){
+  const corpo=document.getElementById('rxBody');
+  corpo.querySelectorAll('.rxRow,.rxVar').forEach(b=>b.onclick=()=>rxFiltraCat(b.dataset.cat));
+  const mais=document.getElementById('rxMais'); if(mais) mais.onclick=()=>{ rx.todas=!rx.todas; rxRender(); };
+  corpo.querySelectorAll('[data-sheet]').forEach(b=>b.onclick=()=>rxAbreSheet(b.dataset.sheet));
+  const sc=document.getElementById('rxSimCat'); if(sc){
+    sc.onchange=()=>{ rx.simCat=sc.value; rxAtualizaSim(); };
+    const sp=document.getElementById('rxSimPct');
+    sp.oninput=()=>{ rx.simPct=+sp.value; document.getElementById('rxSimPctV').textContent=rx.simPct+'%'; rxAtualizaSim(); };
+    rxAtualizaSim();
+  }
+}
+
+/* ---------- bottom sheet de filtros ---------- */
+const rxSheet=document.getElementById('rxSheet');
+function rxAbreSheet(tipo){
+  rx.draft={tipo, cats:[...rx.cats], pag:[...rx.pag], grp:[...rx.grp], de:rx.de||shiftMes(state.mes,-5), ate:rx.ate||state.mes};
+  rxDesenhaSheet();
+  rxSheet.classList.remove('hidden');
+  document.body.style.overflow='hidden';
+}
+function rxFechaSheet(){ const mudou=rx.mapMudou; rx.mapMudou=false; rxSheet.classList.add('hidden'); document.body.style.overflow=''; rx.draft=null; if(mudou) rxRender(); }
+function rxDesenhaSheet(){
+  const d=rx.draft, T=document.getElementById('rxSheetT'), B=document.getElementById('rxSheetB');
+  const chip=(grupo,val,txt,extra='')=>`<button type="button" class="rxCh${d[grupo].includes(val)?' on':''}" data-g="${grupo}" data-v="${esc(val)}"${extra}>${txt}</button>`;
+  if(d.tipo==='cats'){
+    T.textContent='Quais categorias?';
+    const todas=[...new Set([...catsD(), ...Object.keys(rx.cor||{})])];
+    B.innerHTML=`<p class="rxSheetP">Toque para marcar uma ou mais. Sem nenhuma marcada, entram todas.</p><div class="rxChs">${todas.map(c=>chip('cats',c,`<i style="background:${rxCorCat(c)}"></i>${esc(c)}`)).join('')}</div>`;
+  }else if(d.tipo==='pag'){
+    T.textContent='Como foi pago?';
+    B.innerHTML=`<p class="rxSheetP">Veja só os gastos feitos de um jeito.</p><div class="rxChs">${RX_PAGS.map(([id,nome])=>chip('pag',id,nome)).join('')}</div>`;
+  }else if(d.tipo==='grp'){
+    T.textContent='Qual perfil de gasto?';
+    B.innerHTML=`<p class="rxSheetP">Separe o que sustenta a vida do que dá para ajustar.</p>
+      <div class="rxChs">${RX_GRUPOS.map(g=>chip('grp',g.id,`${g.emoji} ${g.nome}`)).join('')}</div>
+      <div class="rxSheetSub">Em qual perfil cada categoria entra?</div>
+      ${catsD().map(c=>`<div class="rxMap"><span>${esc(c)}</span><div class="segment">${RX_GRUPOS.map(g=>`<button type="button" class="${rxGrupoDe(c)===g.id?'selInc':''}" data-map="${esc(c)}" data-gid="${g.id}" aria-label="${esc(c)}: ${g.nome}">${g.emoji}</button>`).join('')}</div></div>`).join('')}`;
+  }else{
+    T.textContent='Escolher período';
+    B.innerHTML=`<p class="rxSheetP">Meses inteiros, do primeiro ao último.</p>
+      <div class="relRow"><div class="field"><label>De</label><input type="month" id="rxDe" value="${d.de}"></div>
+      <div class="field"><label>Até</label><input type="month" id="rxAte" value="${d.ate}"></div></div>`;
+  }
+  B.querySelectorAll('.rxCh').forEach(b=>b.onclick=()=>{
+    const arr=d[b.dataset.g], v=b.dataset.v, i=arr.indexOf(v);
+    if(i>=0) arr.splice(i,1); else arr.push(v);
+    b.classList.toggle('on',i<0);
+  });
+  B.querySelectorAll('[data-map]').forEach(b=>b.onclick=()=>{
+    rx.gmap[b.dataset.map]=b.dataset.gid; rxSalvaGrupos(); rx.mapMudou=true; rxDesenhaSheet();
+  });
+}
+document.getElementById('rxSheetOk').onclick=()=>{
+  const d=rx.draft; if(!d) return;
+  if(d.tipo==='periodo'){
+    const de=document.getElementById('rxDe').value, ate=document.getElementById('rxAte').value;
+    rx.de=de||d.de; rx.ate=ate||d.ate; rx.per='custom';
+  }else{ rx.cats=d.cats; rx.pag=d.pag; rx.grp=d.grp; }
+  rxSalva(); rxFechaSheet(); rxRender();
+};
+document.getElementById('rxSheetLimpa').onclick=()=>{
+  const d=rx.draft; if(!d) return;
+  if(d.tipo==='periodo'){ d.de=shiftMes(state.mes,-5); d.ate=state.mes; }
+  else d[d.tipo]=[];
+  rxDesenhaSheet();
+};
+rxSheet.addEventListener('click',e=>{ if(e.target===rxSheet) rxFechaSheet(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape' && !rxSheet.classList.contains('hidden')) rxFechaSheet(); });
+document.getElementById('rxBtnCats').onclick=()=>rxAbreSheet('cats');
+document.getElementById('rxBtnPag').onclick=()=>rxAbreSheet('pag');
+document.getElementById('rxBtnGrp').onclick=()=>rxAbreSheet('grp');
+document.getElementById('rxClear').onclick=()=>{ rx.cats=[]; rx.pag=[]; rx.grp=[]; rxSalva(); rxRender(); };
+if(window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{
+  const sec=document.getElementById('tab-relat');
+  if(sec && !sec.classList.contains('hidden') && rx.ctx) rxRender();
+});
+
+/* atalho do Resumo: abre o Raio-X já filtrado por uma categoria, no mês */
+function abrirRaioX(cat){
+  if(cat){ rx.per='mes'; rx.cats=[cat]; rx.pag=[]; rx.grp=[]; rxSalva(); }
+  if(window.lpCofrinTab) window.lpCofrinTab('relat');
+  else document.querySelector('nav.tabs button[data-tab="relat"]').click();
 }
 
 /* ====================================================================
@@ -1014,7 +1519,166 @@ function renderMercado(){
   document.getElementById('mkTabProdutos').innerHTML=mkTabelaProdutosHTML(produtos);
   document.getElementById('mkTabNotas').innerHTML=mkTabelaNotasHTML(notas);
   mkLigarTabelas();
+  mkVisao(notas, itens, produtos);
 }
+
+/* ---------- Mercado: a visão de cima (período rápido + gráficos) ---------- */
+const MK_PERIODOS=[['3m','3 meses',-2],['6m','6 meses',-5],['12m','12 meses',-11]];
+function mkBarra(){
+  const el=document.getElementById('mkPer');
+  const ref=state.mes;
+  const ativo=id=>{
+    if(id==='ano') return mk.de===ref.slice(0,4)+'-01' && mk.ate===ref.slice(0,4)+'-12';
+    const p=MK_PERIODOS.find(x=>x[0]===id);
+    return mk.de===shiftMes(ref,p[2]) && mk.ate===ref;
+  };
+  const opcoes=[...MK_PERIODOS.map(p=>[p[0],p[1]]),['ano','Ano']];
+  el.innerHTML=opcoes.map(([id,nome])=>`<button type="button" class="rxPill${ativo(id)?' on':''}" data-p="${id}">${nome}</button>`).join('')+
+    `<button type="button" class="rxPill" id="mkPerOutro">Outro…</button>`;
+  el.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{
+    const id=b.dataset.p;
+    if(id==='ano'){ mk.de=document.getElementById('mkDe').value=ref.slice(0,4)+'-01'; document.getElementById('mkAte').value=ref.slice(0,4)+'-12'; }
+    else { const p=MK_PERIODOS.find(x=>x[0]===id); document.getElementById('mkDe').value=shiftMes(ref,p[2]); document.getElementById('mkAte').value=ref; }
+    carregarMercado();
+  });
+  document.getElementById('mkPerOutro').onclick=()=>{
+    const d=document.getElementById('mkPeriodoManual'); d.open=!d.open;
+    if(d.open) d.scrollIntoView({block:'nearest',behavior:'smooth'});
+  };
+}
+
+function mkVisao(notas, itens, produtos){
+  const box=document.getElementById('mkVisao');
+  rxLimpaGraficos('mkv');
+  mkBarra();
+  if(!notas.length){
+    box.innerHTML='<div class="card"><div class="empty">Ainda não há notas neste período.<br>Toque em <b>Escanear nota</b> ou <b>Digitar nota</b> para começar o seu raio-X do mercado.</div></div>';
+    return;
+  }
+  const total=notas.reduce((a,c)=>a+(c.total||0),0);
+  const idas=notas.length, ticket=total/idas;
+  const meses=mesesEntre(mk.de,mk.ate);
+  const porMes=meses.map(m=>{ const n=notas.filter(c=>c.mes===m); return {m, total:n.reduce((a,c)=>a+(c.total||0),0), idas:n.length}; });
+  const comDados=porMes.filter(x=>x.idas);
+  mk.visTotal=total;
+
+  /* frase do ticket médio: primeiro × último mês com compras */
+  let fraseTicket='';
+  if(comDados.length>1){
+    const a=comDados[0], b=comDados[comDados.length-1];
+    const ta=a.total/a.idas, tb=b.total/b.idas, d=(tb-ta)/ta*100;
+    fraseTicket=`O ticket médio foi de ${fmtInt(ta)} em ${mesCurto(a.m)} para ${fmtInt(tb)} em ${mesCurto(b.m)} (${d>=0?'+':'−'}${Math.abs(d).toFixed(0)}%).`;
+  }
+  const idasMes=comDados.length? idas/comDados.length : idas;
+
+  /* lojas: gasto, idas, ticket e "índice de preço" nos produtos que se repetem */
+  const lojas=agrupar(notas,c=>(c.mercado||'—').trim()).sort((a,b)=>b.total-a.total);
+  lojas.forEach(l=>{ l.total=l.itens.reduce((a,c)=>a+(c.total||0),0); });
+  lojas.sort((a,b)=>b.total-a.total);
+  const idx=mkIndiceLojas(produtos);
+
+  /* inflação do carrinho */
+  const varia=produtos.filter(p=>p.hist.length>=2 && p.primeiro>0 && p.hist.filter(h=>h.unit>0).length>=2)
+    .map(p=>({p, d:p.varia})).filter(x=>Math.abs(x.d)>=1);
+  const sobem=varia.filter(x=>x.d>0).sort((a,b)=>b.d-a.d).slice(0,5);
+  const caem=varia.filter(x=>x.d<0).sort((a,b)=>a.d-b.d).slice(0,5);
+  const linhaVar=x=>`<div class="rxVar ${x.d>0?'sobe':'desce'} static"><span class="n">${esc(x.p.nome.length>30?x.p.nome.slice(0,29)+'…':x.p.nome)}</span>
+    <span class="v">${x.d>0?'+':'−'}${Math.abs(x.d).toFixed(0)}% <small>${fmt(x.p.primeiro)} → ${fmt(x.p.ultimo)}</small></span></div>`;
+
+  /* economia possível: tudo que pagou acima do menor preço já visto */
+  let acima=0, base=0;
+  produtos.forEach(p=>{
+    if(p.hist.length<2 || !(p.min>0)) return;
+    p.hist.forEach(h=>{ if(h.unit>0 && h.un===p.un){ acima+=Math.max(0,h.unit-p.min)*(h.qtd||0); base+=h.unit*(h.qtd||0); } });
+  });
+
+  box.innerHTML=`
+    <div class="rxTiles four">
+      <div><span>Gasto</span><b>${fmtInt(total)}</b></div>
+      <div><span>Idas</span><b>${idas}</b></div>
+      <div><span>Ticket médio</span><b>${fmtInt(ticket)}</b></div>
+      <div><span>Do total gasto</span><b id="mkvPart">…</b></div>
+    </div>
+    ${rxCard('mkvMes',meses.length>1?'Quanto você gasta por mês':'Quanto você gasta por semana',
+      `Cerca de <b>${idasMes.toFixed(1).replace('.',',')}</b> ida${idasMes>=1.5?'s':''} por ${meses.length>1?'mês':'mês'}, <b>${fmtInt(ticket)}</b> em cada. ${fraseTicket}`,
+      rxCanvas('chartMkvMes',220))}
+    ${rxCard('mkvSemana','Quando você vai ao mercado','<span id="mkvSemanaS"></span>',rxCanvas('chartMkvSemana',190))}
+    ${lojas.length>1?rxCard('mkvLojas','Lojas lado a lado',
+      idx.length?`Nos produtos que você compra em mais de uma loja, <b>${esc(idx[0].m)}</b> costuma ser a mais barata${idx.length>1&&idx[idx.length-1].v>1.02?` e <b>${esc(idx[idx.length-1].m)}</b> a mais cara (+${Math.round((idx[idx.length-1].v-1)*100)}%)`:''}.`:'Compre o mesmo produto em lojas diferentes para ver qual sai mais barata.',
+      `<div class="rxRows">${lojas.map((l,i)=>{
+        const pi=idx.find(x=>x.m===l.k);
+        const sel=`${pi?(pi.v<=1.02?'<span class="rxDelta bom">mais barata</span>':`<span class="rxDelta ruim">+${Math.round((pi.v-1)*100)}% nos mesmos produtos</span>`):''}`;
+        return `<div class="rxRow static"><span class="top"><span class="n"><i style="background:${vzCor(i)}"></i>${esc(l.k)}</span><span class="v">${fmtInt(l.total)}</span></span>
+          <span class="b"><span style="width:${Math.max(2,l.total/lojas[0].total*100)}%;background:${vzCor(i)}"></span></span>
+          <span class="sub"><span>${l.qtd} ida${l.qtd===1?'':'s'} · ticket ${fmtInt(l.total/l.qtd)}</span>${sel}</span></div>`; }).join('')}</div>`):''}
+    ${(sobem.length||caem.length)?rxCard('mkvInfl','A inflação do seu carrinho',
+      sobem.length?`<b>${esc(sobem[0].p.nome.length>28?sobem[0].p.nome.slice(0,27)+'…':sobem[0].p.nome)}</b> subiu ${sobem[0].d.toFixed(0)}% desde a primeira compra. Compara o 1º e o último preço de cada produto.`:'Nada ficou mais caro no período.',
+      `${sobem.length?`<div class="rxVarT">Ficou mais caro</div>${sobem.map(linhaVar).join('')}`:''}${caem.length?`<div class="rxVarT">Ficou mais barato</div>${caem.map(linhaVar).join('')}`:''}`):''}
+    ${acima>0?rxCard('mkvEco','Dinheiro que ficou na mesa',
+      `Se tivesse pago sempre o menor preço que já conseguiu em cada produto, você teria economizado cerca de <b>${fmtInt(acima)}</b> (${pct1(pct(acima,base))} do que gastou neles). <span class="rxMut">Estimativa: só conta produtos comprados mais de uma vez.</span>`,''):''}`;
+
+  /* gráficos */
+  const semanal = meses.length===1;
+  let rot, vals, qtds;
+  if(semanal){
+    rot=['1ª sem.','2ª sem.','3ª sem.','4ª sem.','5ª sem.']; vals=[0,0,0,0,0]; qtds=[0,0,0,0,0];
+    notas.forEach(c=>{ const i=Math.min(4,Math.floor((+c.data.slice(8)-1)/7)); vals[i]+=(c.total||0)/100; qtds[i]++; });
+    if(!vals[4]){ rot.pop(); vals.pop(); qtds.pop(); }
+  }else{
+    rot=porMes.map(x=>mesCurto(x.m)); vals=porMes.map(x=>x.total/100); qtds=porMes.map(x=>x.idas);
+  }
+  mkChart('mkvMes','chartMkvMes',{type:'bar',
+    data:{labels:rot,datasets:[{label:'Gasto',data:vals,backgroundColor:vzCor(2),borderRadius:5,borderSkipped:false,maxBarThickness:40}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{
+      label:c=>` ${c.parsed.y.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}`,
+      afterLabel:c=>` ${qtds[c.dataIndex]} ida${qtds[c.dataIndex]===1?'':'s'}`}}},
+      scales:{x:{grid:{display:false}},y:rxEixoY}}});
+
+  const dia=[0,0,0,0,0,0,0], vez=[0,0,0,0,0,0,0];
+  notas.forEach(c=>{ const d=new Date(c.data+'T12:00').getDay(); dia[d]+=(c.total||0)/100; vez[d]++; });
+  const topD=dia.map((v,i)=>[v,i]).sort((a,b)=>b[0]-a[0])[0];
+  document.getElementById('mkvSemanaS').innerHTML=`Você faz mais compras no(a) <b>${RX_DIAS[topD[1]]}</b>: ${vez[topD[1]]} das ${idas} idas, ${fmtInt(topD[0]*100)} no total. <span class="rxMut">Quem vai sempre no mesmo dia planeja melhor a lista.</span>`;
+  mkChart('mkvSemana','chartMkvSemana',{type:'bar',
+    data:{labels:RX_DIAS,datasets:[{label:'Gasto',data:dia,backgroundColor:vzCor(2),borderRadius:5,borderSkipped:false,maxBarThickness:34}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{
+      label:c=>` ${c.parsed.y.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}`,
+      afterLabel:c=>` ${vez[c.dataIndex]} ida${vez[c.dataIndex]===1?'':'s'}`}}},
+      scales:{x:{grid:{display:false}},y:rxEixoY}}});
+  mkAtualizaParticipacao();
+}
+
+/* quanto cada loja custa, em média, em relação à mais barata (só produtos vistos em 2+ lojas) */
+function mkIndiceLojas(produtos){
+  const acc={};
+  produtos.forEach(p=>{
+    const por={};
+    p.hist.forEach(h=>{ if(h.unit>0 && h.un===p.un){ (por[h.mercado]=por[h.mercado]||[]).push(h.unit); } });
+    const ms=Object.keys(por); if(ms.length<2) return;
+    const med=Object.fromEntries(ms.map(m=>[m, por[m].reduce((a,b)=>a+b,0)/por[m].length]));
+    const min=Math.min(...Object.values(med));
+    ms.forEach(m=>{ (acc[m]=acc[m]||[]).push(med[m]/min); });
+  });
+  return Object.entries(acc).filter(([,v])=>v.length>=2)
+    .map(([m,v])=>({m, v:v.reduce((a,b)=>a+b,0)/v.length, n:v.length}))
+    .sort((a,b)=>a.v-b.v);
+}
+
+/* % do gasto total que é mercado (busca os lançamentos do período) */
+async function mkAtualizaParticipacao(){
+  const el=document.getElementById('mkvPart'); if(!el) return;
+  const de=mk.de, ate=mk.ate;
+  try{
+    const txs=await rxBusca(de,ate);
+    if(de!==mk.de || ate!==mk.ate) return;
+    const desp=txs.filter(t=>t.tipo==='despesa' && t.mes>=de && t.mes<=ate);
+    const totalDesp=rxSoma(desp);
+    const merc=rxSoma(desp.filter(t=>t.cat==='Mercado'));
+    const alvo = merc>0 ? merc : (mk.visTotal||0);
+    const e=document.getElementById('mkvPart');
+    if(e) e.textContent = totalDesp>0 && alvo>0 ? pct1(pct(alvo,totalDesp)) : '—';
+  }catch(ex){ console.error('mercado-part:',ex); const e=document.getElementById('mkvPart'); if(e) e.textContent='—'; }
+}
+
 
 const mkMetricaLbl=()=> mk.metrica==='kg' ? 'preço por kg' : 'preço unitário';
 function mkValor(h){ return mk.metrica==='kg' ? h.precoKg : h.unit; }
@@ -3359,13 +4023,13 @@ const GUIA_PASSOS=[
       <li>O botão laranja <b>+</b> no canto da tela cadastra um gasto ou receita a partir de qualquer aba.</li>
     </ul>
     <p>Vamos conhecer cada aba? 👇</p>`},
-  {e:'📊',t:'Dashboard',c:`
-    <p>É o resumo do mês selecionado — a primeira coisa que você vê ao abrir o app.</p>
+  {e:'📊',t:'Resumo',c:`
+    <p>O retrato rápido do mês selecionado — a primeira coisa que você vê ao abrir o app.</p>
     <ul>
-      <li><b>Saldo do mês</b>: receitas menos despesas.</li>
-      <li><b>Gastos por categoria</b>: o gráfico mostra para onde o dinheiro foi.</li>
-      <li><b>Últimos 6 meses</b>: compara receitas × despesas ao longo do tempo.</li>
-      <li><b>Maiores gastos</b>: os lançamentos mais pesados do mês.</li>
+      <li><b>Saldo do mês</b> e quanto da renda já foi embora.</li>
+      <li><b>Por dia</b> e <b>Fecha o mês em</b>: para onde o mês caminha no ritmo atual.</li>
+      <li><b>Para onde foi o dinheiro</b>: toque numa categoria para abrir o Raio-X já filtrado.</li>
+      <li><b>Últimos 6 meses</b> e os <b>maiores gastos</b> do mês.</li>
     </ul>`},
   {e:'💸',t:'Lançamentos',c:`
     <p>Cada gasto ou receita é um lançamento. É aqui que a vida financeira acontece.</p>
@@ -3377,13 +4041,14 @@ const GUIA_PASSOS=[
       <li><b>🏷️ Categorias</b>: crie, renomeie ou exclua suas próprias categorias de despesa e receita.</li>
       <li><b>⚙️ Campos personalizados</b>: crie campos extras para todo lançamento, como "Quem gastou" ou "Parcelas".</li>
     </ul>`},
-  {e:'📈',t:'Relatórios',c:`
-    <p>Monte relatórios do jeito que você quiser e entenda para onde o dinheiro vai.</p>
+  {e:'🔎',t:'Raio-X',c:`
+    <p>A visão completa do seu gasto de vida: para onde o dinheiro vai, o que mudou e o que você pode ajustar.</p>
     <ul>
-      <li><b>Mensal</b>: escolha um intervalo de meses e compare receitas × despesas mês a mês.</li>
-      <li><b>Diário</b>: veja o movimento dia a dia dentro de um mês.</li>
-      <li>Três gráficos de uma vez: evolução no tempo, distribuição por categoria e linhas categoria a categoria.</li>
-      <li>Os filtros do topo (período e categoria) valem para <b>todos os gráficos e tabelas</b> ao mesmo tempo.</li>
+      <li><b>Filtros no topo</b>: período (mês, 3, 6, 12 meses, ano, tudo ou outro), categorias, forma de pagamento e perfil. Valem para <b>todos os gráficos</b> ao mesmo tempo.</li>
+      <li><b>Perfil do gasto</b>: separa Essencial, Bem-estar e Prazer — você escolhe onde cada categoria entra.</li>
+      <li><b>O que mudou</b>, <b>ritmo do mês</b>, <b>calendário de gastos</b> e <b>dia da semana</b> mostram seus hábitos.</li>
+      <li><b>E se eu cortasse?</b> simula quanto você guarda reduzindo uma categoria.</li>
+      <li>Toque numa categoria da lista para filtrar tudo por ela.</li>
     </ul>`},
   {e:'🛒',t:'Mercado',c:`
     <p>Fotografe a nota fiscal do mercado e o app monta o histórico de preço de cada produto que você compra.</p>
