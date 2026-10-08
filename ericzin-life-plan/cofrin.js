@@ -1525,8 +1525,34 @@ document.getElementById('btnNotaColar').onclick=()=>{
   document.getElementById('notaColarBox').classList.toggle('hidden');
   document.getElementById('notaColarTexto').focus();
 };
-/* cada linha: Nome | Qtd | Un | Valor unit. | Valor total */
+/* formato copiado da nota eletrônica:
+     NOME DO PRODUTO (Código: 123 )
+     Qtde.:1   UN: UN0001   Vl. Unit.:   6,99 	Vl. Total
+     6,99
+   Itens repetidos (mesmo código e preço) são somados num só. */
+function parseListaNota(texto){
+  const re=/([^\n]+?)\s*\(C[óo]digo:\s*(\d+)\s*\)\s*Qtde\.?:\s*([\d.,]+)\s+UN:\s*([A-Za-z]+)\d*\s+Vl\.?\s*Unit\.?:\s*([\d.,]+)\s*Vl\.?\s*Total\s*:?\s*([\d.,]+)/gi;
+  const itens=[], vistos={};
+  let m;
+  while((m=re.exec(texto))){
+    const qtd=numBR(m[3])||1, unit=centsBR(m[5]);
+    let total=centsBR(m[6]);
+    if(!total) total=Math.round(qtd*unit);
+    const chave=m[2]+'|'+unit;
+    if(vistos[chave]){
+      const it=vistos[chave];
+      it.qtd=Math.round((it.qtd+qtd)*1000)/1000; it.total+=total;
+      continue;
+    }
+    const it={ nome:tituloBR(m[1].trim()).slice(0,80), qtd, un:normUn(m[4]), unit, desconto:0, total, peso:0 };
+    vistos[chave]=it; itens.push(it);
+  }
+  return itens;
+}
+/* cada linha: Nome | Qtd | Un | Valor unit. | Valor total  (ou o formato da nota, acima) */
 function parseListaColada(texto){
+  const daNota=parseListaNota(texto);
+  if(daNota.length) return daNota;
   const itens=[];
   texto.split('\n').forEach(l=>{
     const p=l.split('|').map(s=>s.trim());
@@ -1540,7 +1566,7 @@ function parseListaColada(texto){
 }
 function processarListaColada(texto){
   const itens=parseListaColada(texto);
-  if(!itens.length){ toast('Não entendi nenhuma linha — confira o formato Nome | Qtd | Un | Unit | Total'); return; }
+  if(!itens.length){ toast('Não entendi nenhuma linha — confira o formato (Nome | Qtd | Un | Unit | Total, ou o texto copiado da nota)'); return; }
   nota.origem='foto';
   document.getElementById('notaColarTexto').value='';
   document.getElementById('notaColarBox').classList.add('hidden');
