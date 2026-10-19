@@ -1,13 +1,13 @@
 {
-  "name": "Ericzin's Life Plan",
-  "short_name": "Life Plan",
-  "description": "Painel semanal com os pilares da vida e o Meu Cofrin.",
+  "name": "Ericzin",
+  "short_name": "Ericzin",
+  "description": "Finanças e rotina num lugar só: lançamentos, Raio-X, mercado, contas da casa e metas do dia.",
   "lang": "pt-BR",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#111827",
-  "theme_color": "#8570fd",
+  "background_color": "#F5F6FA",
+  "theme_color": "#F5F6FA",
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },

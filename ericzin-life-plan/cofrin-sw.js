@@ -1,9 +1,9 @@
-/* Service worker do Meu Cofrin dentro do LifePlan — só o push das metas do dia.
-   Sem cache de propósito: o LifePlan é um arquivo só e deve sempre vir fresco da rede. */
+/* Service worker do Ericzin — só o push das metas do dia.
+   Sem cache de propósito: o app deve sempre vir fresco da rede. */
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
 
-const LIFEPLAN = './#cofrin/metas';
+const ALVO_PADRAO = './#cofrin/metas'; // formato antigo do link, o app ainda entende
 
 /* Web Push: mostra a notificação enviada pelo worker cofre-notifier */
 self.addEventListener('push', e => {
@@ -15,16 +15,16 @@ self.addEventListener('push', e => {
     tag: data.tag || undefined,
     icon: 'cofrin-icon.png',
     badge: 'cofrin-icon.png',
-    data: { url: data.url || LIFEPLAN },
+    data: { url: data.url || ALVO_PADRAO },
   }));
 });
 
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  const alvo = new URL((e.notification.data && e.notification.data.url) || LIFEPLAN, self.registration.scope).href;
+  const alvo = new URL((e.notification.data && e.notification.data.url) || ALVO_PADRAO, self.registration.scope).href;
   e.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
-      // reaproveita uma janela já aberta no destino; senão abre o Life Plan
+      // reaproveita uma janela já aberta no destino; senão abre o app
       for (const c of list) {
         if (new URL(c.url).origin === new URL(alvo).origin && 'focus' in c) {
           return c.focus().then(w => (w && 'navigate' in w) ? w.navigate(alvo) : w);
