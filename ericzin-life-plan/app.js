@@ -1,17 +1,3 @@
-/* Meu Cofrin dentro do Ericzin's Life Plan — gerado a partir do moneyericana/index.html.
-   Roda isolado numa função: não enxerga nem é enxergado pelo script do LifePlan. */
-(function(){
-/* o LifePlan usa Chart.js 3; o cofrin foi escrito para o 4, carregado antes com outro nome */
-const Chart = window.CofrinChart;
-function temaGraficos(){
-  const cs = getComputedStyle(document.documentElement);
-  Chart.defaults.color = cs.getPropertyValue('--text-2').trim() || '#6b7280';
-  Chart.defaults.borderColor = cs.getPropertyValue('--border').trim() || '#e5e7eb';
-  Chart.defaults.font.family = "'Nunito', system-ui, sans-serif";
-}
-temaGraficos();
-if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', temaGraficos);
-
 /* =====================================================================
    CONFIGURAÇÃO — cole aqui o firebaseConfig do seu projeto
    (Console Firebase → Configurações do projeto → Seus apps → Web)
@@ -28,10 +14,19 @@ const firebaseConfig = {
 /* Categorias padrão — valem até o usuário personalizar as dele (aba Lançamentos → 🏷️ Categorias) */
 const CATS_DESPESA = ["Moradia","Mercado","Restaurantes","Transporte","Saúde","Esportes","Pets","Lazer","Assinaturas","Educação","Viagem","Outros"];
 const CATS_RECEITA = ["Salário","Extra","Investimentos","Outros"];
-const CAT_COLORS = ["#00A86B","#FF5C4D","#FFAA00","#2D9CDB","#8B5CF6","#00C4B4","#FF7A00","#EC4899","#84CC16","#0EA5E9","#F43F5E","#6366F1"];
+const CAT_COLORS = ["#6E56F8","#F0616D","#F5A524","#2D9CDB","#17B890","#EC4899","#FF7A00","#84CC16","#0EA5E9","#8B5CF6","#F43F5E","#64748B"];
 
-/* app com nome próprio: o LifePlan usa o app padrão (projeto ericzinlifeplan) */
-const cofApp = firebase.initializeApp(firebaseConfig, 'cofrin');
+firebase.initializeApp(firebaseConfig);
+
+/* Gráficos: cores de texto e grade seguem o tema (claro/escuro) da página */
+function temaGraficos(){
+  const cs=getComputedStyle(document.documentElement);
+  Chart.defaults.color=cs.getPropertyValue('--muted').trim()||'#6b7280';
+  Chart.defaults.borderColor=cs.getPropertyValue('--line').trim()||'#e5e7eb';
+  Chart.defaults.font.family="'Inter',system-ui,sans-serif";
+}
+temaGraficos();
+if(window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener('change',temaGraficos);
 
 /* ---- Firebase App Check (reCAPTCHA v3) ----
    Cole aqui a SITE KEY criada em Console Firebase → App Check → Apps → Web.
@@ -39,16 +34,16 @@ const cofApp = firebase.initializeApp(firebaseConfig, 'cofrin');
    Só ative o "enforcement" no console DEPOIS de publicar o app com a chave. */
 const APP_CHECK_SITE_KEY = "6LcnU1ktAAAAAOJqplc-TzVwj5uI6PkdIXc7CXov";
 if (APP_CHECK_SITE_KEY) {
-  firebase.appCheck(cofApp).activate(APP_CHECK_SITE_KEY, true); // true = renova o token sozinho
+  firebase.appCheck().activate(APP_CHECK_SITE_KEY, true); // true = renova o token sozinho
 }
 
-const auth = cofApp.auth();
+const auth = firebase.auth();
 auth.useDeviceLanguage(); // e-mails de verificação/recuperação no idioma do aparelho
-const db = cofApp.firestore();
+const db = firebase.firestore();
 
 /* ---------------- Estado ---------------- */
 const state = {
-  uid:null, nome:"",
+  uid:null, nome:"", aba:'dash',
   mes: mesAtual(),              // "YYYY-MM"
   dia: hojeISO(),               // "YYYY-MM-DD" (aba Metas)
   txs: [],                      // lançamentos do mês
@@ -231,6 +226,7 @@ function entrarNoApp(user){
   renderPerfilChip();
   document.getElementById('loginView').classList.add('hidden');
   document.getElementById('appView').classList.remove('hidden');
+  irAba(abaDoHash()||abaSalva());
   carregarMes();
   escutarCats();
   escutarContas();
@@ -274,34 +270,61 @@ auth.onAuthStateChanged(user=>{
 document.getElementById('prevMonth').onclick=()=>{ state.mes=shiftMes(state.mes,-1); carregarMes(); };
 document.getElementById('nextMonth').onclick=()=>{ state.mes=shiftMes(state.mes, 1); carregarMes(); };
 
-const tabsMenu=document.getElementById('tabsMenu');
-const tabsToggle=document.getElementById('tabsToggle');
-tabsToggle.onclick=()=>{
-  const open=tabsMenu.classList.toggle('open');
-  tabsToggle.setAttribute('aria-expanded', open);
-};
-document.addEventListener('click', e=>{
-  if(!tabsMenu.contains(e.target)){
-    tabsMenu.classList.remove('open');
-    tabsToggle.setAttribute('aria-expanded','false');
-  }
+/* link da notificação das metas: #cofrin/metas (formato antigo) ou #metas */
+function abaDoHash(){
+  const m=location.hash.match(/^#(?:cofrin\/)?(\w+)$/);
+  return m && abaValida(m[1]) ? m[1] : null;
+}
+window.addEventListener('hashchange',()=>{
+  const t=abaDoHash(); if(!t || !state.uid) return;
+  irAba(t); history.replaceState(null,'',location.pathname+location.search);
 });
 
-document.querySelectorAll('nav.tabs button').forEach(b=>{
-  b.onclick=()=>{
-    document.querySelectorAll('nav.tabs button').forEach(x=>x.classList.remove('active'));
-    b.classList.add('active');
-    ['dash','tx','relat','mercado','contas','metas','pets','admin'].forEach(t=>
-      document.getElementById('tab-'+t).classList.toggle('hidden', t!==b.dataset.tab));
-    document.getElementById('tabsToggleLabel').textContent=b.textContent.trim();
-    tabsMenu.classList.remove('open');
-    tabsToggle.setAttribute('aria-expanded','false');
-    if(b.dataset.tab==='relat') abrirRelatorios();
-    if(b.dataset.tab==='mercado') abrirMercado();
-    if(b.dataset.tab==='contas') abrirContas();
-    if(b.dataset.tab==='admin') abrirAdmin();
-  };
-});
+/* Abas: a barra de baixo (celular) e o menu lateral (computador) usam os mesmos botões [data-tab] */
+const ABAS=['dash','tx','relat','metas','mais','mercado','contas','pets','admin'];
+const ABAS_COM_MES=['dash','tx','contas'];
+const ABAS_DO_MAIS=['mais','mercado','contas','pets','admin'];
+const ABAS_COM_FAB=['dash','tx'];
+const ehDesktop=()=>matchMedia('(min-width:900px)').matches;
+function abaValida(t){ return ABAS.includes(t); }
+function abaSalva(){ try{ const t=localStorage.getItem('ericzin_aba'); return abaValida(t)?t:'dash'; }catch(e){ return 'dash'; } }
+function irAba(tab){
+  if(!abaValida(tab)) tab='dash';
+  if(tab==='mais' && ehDesktop()) tab='dash';
+  state.aba=tab;
+  try{ localStorage.setItem('ericzin_aba',tab); }catch(e){}
+  ABAS.forEach(t=>document.getElementById('tab-'+t).classList.toggle('hidden', t!==tab));
+  document.querySelectorAll('.side [data-tab], .tabbar [data-tab]').forEach(b=>{
+    const t=b.dataset.tab;
+    const ativo = t===tab || (b.closest('.tabbar') && t==='mais' && ABAS_DO_MAIS.includes(tab));
+    b.classList.toggle('active', ativo);
+    if(ativo) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current');
+  });
+  const titulos={dash:'Início',tx:'Lançamentos',relat:'Raio-X',metas:'Metas do dia',mais:'Mais',mercado:'Mercado',contas:'Contas da casa',pets:'Coleção',admin:'Admin'};
+  document.getElementById('topTitulo').textContent=titulos[tab];
+  document.getElementById('monthBar').classList.toggle('hidden', !ABAS_COM_MES.includes(tab));
+  document.getElementById('fabAdd').classList.toggle('hidden', !ABAS_COM_FAB.includes(tab));
+  document.getElementById('btnVoltar').classList.toggle('hidden', !(['mercado','contas','pets','admin'].includes(tab)) || ehDesktop());
+  if(tab==='relat') abrirRelatorios();
+  if(tab==='mercado') abrirMercado();
+  if(tab==='contas') abrirContas();
+  if(tab==='admin') abrirAdmin();
+  if(tab==='metas' || tab==='dash') temaGraficos();
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>irAba(b.dataset.tab));
+document.getElementById('btnVoltar').onclick=()=>irAba('mais');
+matchMedia('(min-width:900px)').addEventListener('change',()=>irAba(state.aba));
+/* "Mais" no celular: atalhos que não são abas */
+document.getElementById('maisPerfil').onclick=()=>document.getElementById('btnPerfil').click();
+document.getElementById('maisGuia').onclick=()=>abrirGuia(0);
+document.getElementById('maisSair').onclick=()=>auth.signOut();
+/* a aba Admin só existe para quem está em admins/{uid}: o menu lateral mostra, o Mais acompanha */
+(function(){
+  const adm=document.getElementById('tabAdminBtn'), mais=document.getElementById('maisAdmin');
+  const sync=()=>mais.classList.toggle('hidden', adm.classList.contains('hidden'));
+  new MutationObserver(sync).observe(adm,{attributes:true,attributeFilter:['class']}); sync();
+})();
 
 /* ---------------- Dados do mês ---------------- */
 function carregarMes(){
@@ -399,11 +422,11 @@ function renderTrendChart(){
   state.charts.trend=new Chart(document.getElementById('chartTrend'),{
     type:'bar',
     data:{labels:lbl,datasets:[
-      {label:'Receitas',data:meses.map(m=>state.trend[m].rec/100),backgroundColor:'#00C87B',borderRadius:6},
-      {label:'Despesas',data:meses.map(m=>state.trend[m].desp/100),backgroundColor:'#FF5C4D',borderRadius:6},
+      {label:'Receitas',data:meses.map(m=>state.trend[m].rec/100),backgroundColor:'#17B890',borderRadius:6},
+      {label:'Despesas',data:meses.map(m=>state.trend[m].desp/100),backgroundColor:'#F0616D',borderRadius:6},
     ]},
     options:{maintainAspectRatio:false,
-      plugins:{legend:{labels:{boxWidth:12,font:{family:'Schibsted Grotesk'}}},
+      plugins:{legend:{labels:{boxWidth:12}},
       tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}`}}},
       scales:{y:{ticks:{callback:v=>'R$ '+v.toLocaleString('pt-BR')}}}}
   });
@@ -1336,8 +1359,7 @@ if(window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListene
 /* atalho do Resumo: abre o Raio-X já filtrado por uma categoria, no mês */
 function abrirRaioX(cat){
   if(cat){ rx.per='mes'; rx.cats=[cat]; rx.pag=[]; rx.grp=[]; rxSalva(); }
-  if(window.lpCofrinTab) window.lpCofrinTab('relat');
-  else document.querySelector('nav.tabs button[data-tab="relat"]').click();
+  irAba('relat');
 }
 
 /* ====================================================================
@@ -1503,7 +1525,7 @@ function renderMercado(){
         datasets:[{data:listaMerc.map(([,v])=>v/100),
           backgroundColor:listaMerc.map((_,i)=>CAT_COLORS[i%CAT_COLORS.length]),borderWidth:0}]},
       options:{maintainAspectRatio:false,cutout:'62%',
-        plugins:{legend:{position:'right',labels:{boxWidth:12,font:{family:'Schibsted Grotesk'}}},tooltip:relTooltip}}});
+        plugins:{legend:{position:'right',labels:{boxWidth:12}},tooltip:relTooltip}}});
   }else if(state.charts.mkMercado){ state.charts.mkMercado.destroy(); state.charts.mkMercado=null; }
 
   /* top produtos por gasto */
@@ -1724,7 +1746,7 @@ function mkGraficoProduto(p){
   mkChart('mkProd','chartMkProd',{type:'line',
     data:{labels:datas.map(d=>d.slice(8,10)+'/'+d.slice(5,7)),datasets},
     options:{maintainAspectRatio:false,
-      plugins:{legend:{labels:{boxWidth:12,font:{family:'Schibsted Grotesk'}}},tooltip:relTooltip},
+      plugins:{legend:{labels:{boxWidth:12}},tooltip:relTooltip},
       scales:{y:{ticks:{callback:moedaCB}}}}});
 }
 
@@ -1745,11 +1767,11 @@ function mkGraficoComparativo(p){
   mkChart('mkComp','chartMkComp',{type:'bar',
     data:{labels:medias.map(x=>x.m),datasets:[
       {label:'Preço médio',data:medias.map(x=>x.media),
-        backgroundColor:medias.map((_,i)=>i===0?'#a99cf5':'#cfc9e6'),borderRadius:5},
+        backgroundColor:medias.map((_,i)=>i===0?'#6E56F8':'#B8BFD0'),borderRadius:5},
       {label:'Menor preço',data:medias.map(x=>x.min),backgroundColor:'#FFC53D',borderRadius:5},
     ]},
     options:{maintainAspectRatio:false,
-      plugins:{legend:{labels:{boxWidth:12,font:{family:'Schibsted Grotesk'}}},tooltip:relTooltip},
+      plugins:{legend:{labels:{boxWidth:12}},tooltip:relTooltip},
       scales:{y:{ticks:{callback:moedaCB}}}}});
 }
 
@@ -2505,7 +2527,7 @@ function renderContasChart(){
   document.getElementById('ctChartTitle').textContent='Gasto mês a mês — '+titulo;
   mkChart('contas','chartContas',{type:'line',
     data:{labels:meses.map(mesCurto), datasets:[{label:titulo, data,
-      borderColor:'#a99cf5', backgroundColor:'#a99cf5',
+      borderColor:'#6E56F8', backgroundColor:'#6E56F8',
       borderWidth:2, pointRadius:3, tension:.3, fill:false}]},
     options:{maintainAspectRatio:false,
       plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>' '+c.parsed.y.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}}},
@@ -2518,7 +2540,8 @@ document.getElementById('ctContaSel').onchange=e=>{ ct.conta=e.target.value; ren
 
 /* ---------------- Metas do dia (rotinas programáveis) ---------------- */
 const DIAS_SEMANA=['dom','seg','ter','qua','qui','sex','sáb'];
-let novaDias=new Set();
+const TODOS_OS_DIAS=()=>new Set([0,1,2,3,4,5,6]);
+let novaDias=TODOS_OS_DIAS(); // por padrão a meta se repete todo dia; é só desmarcar o que não quiser
 
 function diaLabelTxt(d){
   const txt=new Date(d+'T12:00').toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
@@ -2607,9 +2630,10 @@ document.querySelectorAll('.diaChip[data-d]').forEach(ch=>{
   };
 });
 document.getElementById('chipTodos').onclick=()=>{
-  novaDias = novaDias.size===7 ? new Set() : new Set([0,1,2,3,4,5,6]);
+  novaDias = novaDias.size===7 ? new Set() : TODOS_OS_DIAS();
   renderDiaChips();
 };
+renderDiaChips();
 document.getElementById('metaForm').addEventListener('submit', async e=>{
   e.preventDefault();
   const inp=document.getElementById('metaInput');
@@ -2622,7 +2646,7 @@ document.getElementById('metaForm').addEventListener('submit', async e=>{
     criadoEm:firebase.firestore.FieldValue.serverTimestamp()
   });
   inp.value=''; document.getElementById('metaHora').value='';
-  novaDias=new Set(); renderDiaChips();
+  novaDias=TODOS_OS_DIAS(); renderDiaChips();
   toast('Meta programada! 📅');
   inp.focus();
 });
@@ -3388,7 +3412,7 @@ document.getElementById('btnExportar').onclick=async ()=>{
   const b=document.getElementById('btnExportar');
   b.disabled=true; b.textContent='Preparando arquivo…';
   try{
-    const out={app:'SeuCofrin', formato:1, exportadoEm:new Date().toISOString(),
+    const out={app:'Ericzin', formato:1, exportadoEm:new Date().toISOString(),
       conta:{email:auth.currentUser.email, nome:state.nome}, dados:{}};
     for(const c of COLECOES_USUARIO){
       const snap=await col(c).get();
@@ -3397,7 +3421,7 @@ document.getElementById('btnExportar').onclick=async ()=>{
     const blob=new Blob([JSON.stringify(out,null,2)],{type:'application/json'});
     const a=document.createElement('a');
     a.href=URL.createObjectURL(blob);
-    a.download=`seucofrin-dados-${hojeISO()}.json`;
+    a.download=`ericzin-dados-${hojeISO()}.json`;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(()=>URL.revokeObjectURL(a.href),4000);
     toast('Dados exportados! 📦');
@@ -4015,15 +4039,16 @@ document.getElementById('btnImpConfirm').onclick=async ()=>{
 
 /* ---------------- Guia de boas-vindas ---------------- */
 const GUIA_PASSOS=[
-  {e:'👋',t:'Bem-vindo ao Meu Cofrin!',c:`
-    <p>Este é o organizador financeiro da casa: gastos, relatórios e metas do dia — tudo num lugar só.</p>
+  {e:'👋',t:'Bem-vindo ao Ericzin!',c:`
+    <p>Seu organizador de finanças e rotina: gastos, análises, contas da casa e metas do dia — tudo num lugar só.</p>
     <ul>
       <li>Seus dados ficam salvos na nuvem: entre com a mesma conta no celular e no computador.</li>
-      <li>Use as setas <b>‹ ›</b> no topo para navegar entre os meses.</li>
-      <li>O botão laranja <b>+</b> no canto da tela cadastra um gasto ou receita a partir de qualquer aba.</li>
+      <li>Use as setas <b>‹ ›</b> no topo para trocar de mês.</li>
+      <li>O botão <b>+</b> no canto da tela cadastra um gasto ou receita.</li>
+      <li>A barra de baixo leva às telas principais; o <b>Mais</b> guarda o Mercado, as Contas da casa e a Coleção.</li>
     </ul>
-    <p>Vamos conhecer cada aba? 👇</p>`},
-  {e:'📊',t:'Resumo',c:`
+    <p>Vamos conhecer cada tela? 👇</p>`},
+  {e:'🏡',t:'Início',c:`
     <p>O retrato rápido do mês selecionado — a primeira coisa que você vê ao abrir o app.</p>
     <ul>
       <li><b>Saldo do mês</b> e quanto da renda já foi embora.</li>
@@ -4083,20 +4108,20 @@ const GUIA_PASSOS=[
       <li>Quanto mais dias com todas as metas cumpridas, mais perto de completar a coleção!</li>
     </ul>`},
   {e:'👤',t:'Seu perfil',c:`
-    <p>Toque no seu <b>nome ou avatar</b> no topo da tela para abrir o perfil.</p>
+    <p>Toque no seu <b>avatar</b> no topo da tela para abrir o perfil.</p>
     <ul>
       <li>Troque sua <b>foto</b> e seu <b>nome</b>.</li>
       <li>Ative os <b>avisos de metas neste aparelho</b> e envie uma notificação de teste.</li>
-      <li>Altere o <b>e-mail de login</b> ou a <b>senha</b> quando precisar.</li>
+      <li>Altere o <b>e-mail de login</b> ou a <b>senha</b> quando precisar, ou saia da conta.</li>
     </ul>`},
   {e:'📲',t:'Instale como aplicativo',c:`
-    <p>O Meu Cofrin funciona como um app de verdade, direto da tela inicial.</p>
+    <p>O Ericzin funciona como um app de verdade, direto da tela inicial.</p>
     <ul>
       <li><b>Android (Chrome)</b>: menu ⋮ → "Instalar app" ou "Adicionar à tela inicial".</li>
       <li><b>iPhone (Safari)</b>: botão Compartilhar → "Adicionar à Tela de Início".</li>
       <li><b>Computador</b>: ícone de instalação na barra de endereço do navegador.</li>
     </ul>
-    <p>E sempre que bater a dúvida, toque no <b>?</b> no topo para reabrir este guia. Bons cofrinhos! 🐷💰</p>`},
+    <p>E sempre que bater a dúvida, reabra este guia em <b>Mais → Guia do app</b>. Bons cofrinhos! 🐷💰</p>`},
 ];
 const guiaModal=document.getElementById('guiaModal');
 let guiaIdx=0;
@@ -4114,7 +4139,7 @@ function renderGuia(){
       ${guiaIdx>0?'<button type="button" class="btnGhost" id="guiaPrev">‹ Voltar</button>':''}
       <button type="button" class="btnPrimary" id="guiaNext">${ultimo?'Começar a usar! 🚀':'Avançar ›'}</button>
     </div>
-    ${ultimo?'':'<button type="button" class="guiaSkip" id="guiaSkip">Pular o tour (reabra no ? lá em cima)</button>'}`;
+    ${ultimo?'':'<button type="button" class="guiaSkip" id="guiaSkip">Pular o tour (reabra em Mais → Guia do app)</button>'}`;
   const prev=document.getElementById('guiaPrev');
   if(prev) prev.onclick=()=>{ guiaIdx--; renderGuia(); };
   document.getElementById('guiaNext').onclick=()=>{ if(ultimo) fecharGuia(); else { guiaIdx++; renderGuia(); } };
@@ -4127,21 +4152,15 @@ document.getElementById('btnGuia').onclick=()=>abrirGuia(0);
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('.modalWrap').classList.add('hidden'));
 document.querySelectorAll('.modalWrap').forEach(w=>w.addEventListener('click',e=>{ if(e.target===w) w.classList.add('hidden'); }));
 
+/* ---------------- Menu "⋯" dos lançamentos ---------------- */
+const txMenu=document.getElementById('txMenu');
+document.getElementById('btnTxMenu').onclick=e=>{ e.stopPropagation(); txMenu.classList.toggle('hidden'); };
+txMenu.addEventListener('click',()=>txMenu.classList.add('hidden'));
+document.addEventListener('click',()=>txMenu.classList.add('hidden'));
+
 /* ---------------- PWA: service worker ---------------- */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>{
     navigator.serviceWorker.register('cofrin-sw.js').catch(()=>{/* offline-first é opcional */});
   });
 }
-
-/* chamado pelo LifePlan quando a seção aparece: gráficos criados escondidos precisam se remedir */
-window.cofrinOnShow = function(){
-  temaGraficos();
-  Object.values(state.charts || {}).forEach(c => { if (c && c.resize) { c.update('none'); c.resize(); } });
-};
-/* as abas do cofrin viraram itens do menu do LifePlan: ele escolhe a aba por aqui */
-window.cofrinAbrirAba = function(tab){
-  const b = document.querySelector('nav.tabs button[data-tab="' + tab + '"]');
-  if (b) b.click();
-};
-})();

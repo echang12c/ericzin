@@ -2,511 +2,56 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ericzin's Life Plan</title>
-<!-- ícones: coração pixelado sobre roxo, gerados por tools/gerar-icones.mjs -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Ericzin — finanças e rotina</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#F5F6FA" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1016" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Ericzin">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="icon" type="image/png" sizes="64x64" href="icons/favicon-64.png">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#a99cf5">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Life Plan">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap">
-<link rel="stylesheet" href="cofrin.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check-compat.js"></script>
 <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
-<style>
-  :root{
-    --sidebar-w:232px;
-    /* neutral scale */
-    --n-50:#f9fafb; --n-100:#f3f4f6; --n-200:#e5e7eb; --n-300:#d1d5db;
-    --n-400:#9ca3af; --n-500:#6b7280; --n-600:#4b5563; --n-700:#374151;
-    --n-800:#1f2937; --n-900:#111827;
-    /* brand purple */
-    --primary:#a99cf5;
-    --primary-hover:#8f80ee;
-    --primary-500:#cfc7fa;
-    --primary-light:#f0edff;
-    /* contraste forte: números, relatórios, textos sobre fundo pastel */
-    --on-accent:#221b4a;
-    --primary-ink:#5443c2;
-    --data:#2f2570;
-    --data-up:#0b6b45;
-    --data-down:#b3202f;
-
-    --bg:#f8f6fd;
-    --surface:#ffffff;
-    --surface-2:#f1eefa;
-    --border:#e6e1f4;
-    --border-strong:var(--n-300);
-    --text:var(--n-900);
-    --text-2:var(--n-500);
-    --success-bg:#dcf5e8;
-    --success-text:#0b6b45;
-    --warn-bg:var(--primary-light);
-    --warn-text:#4a3bb8;
-    --shadow: 0 1px 2px rgba(17,24,39,.04), 0 8px 20px -12px rgba(17,24,39,.14);
-  }
-  @media (prefers-color-scheme: dark){
-    :root:not([data-theme="light"]){
-      --bg:var(--n-900);
-      --surface:var(--n-800);
-      --surface-2:var(--n-700);
-      --border:#37415130;
-      --border-strong:var(--n-600);
-      --text:var(--n-50);
-      --text-2:var(--n-400);
-      --primary:#b3a7f7;
-      --on-accent:#1a1440;
-      --primary-ink:#c9bfff;
-      --data:#ddd6ff;
-      --data-up:#8ff0bd;
-      --data-down:#ffb3b8;
-      --primary-hover:#9a8bf3;
-      --primary-500:#bcb0fc;
-      --primary-light:#2e2760;
-      --success-bg:#123527;
-      --success-text:#6ee6a4;
-      --warn-bg:var(--primary-light);
-      --warn-text:#dcd4ff;
-      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 20px -12px rgba(0,0,0,.55);
-    }
-  }
-  :root[data-theme="dark"]{
-    --bg:var(--n-900);
-    --surface:var(--n-800);
-    --surface-2:var(--n-700);
-    --border:#37415130;
-    --border-strong:var(--n-600);
-    --text:var(--n-50);
-    --text-2:var(--n-400);
-    --primary:#b3a7f7;
-      --on-accent:#1a1440;
-      --primary-ink:#c9bfff;
-      --data:#ddd6ff;
-      --data-up:#8ff0bd;
-      --data-down:#ffb3b8;
-    --primary-hover:#9a8bf3;
-    --primary-500:#bcb0fc;
-    --primary-light:#2e2760;
-    --success-bg:#123527;
-    --success-text:#6ee6a4;
-    --warn-bg:var(--primary-light);
-    --warn-text:#dcd4ff;
-    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 20px -12px rgba(0,0,0,.55);
-  }
-
-  *{box-sizing:border-box;}
-  [hidden]{ display:none !important; }
-  body{
-    margin:0;
-    background:var(--bg);
-    color:var(--text);
-    font-family:'Nunito', system-ui, sans-serif;
-    font-variant-numeric: tabular-nums;
-  }
-  h1,h2,h3{ font-family:'Baloo 2', system-ui, sans-serif; font-weight:700; text-wrap:balance; margin:0; }
-  button{ font-family:inherit; }
-
-  .app{ min-height:100dvh; }
-
-  /* ---------- Sidebar (always fixed to the left) ---------- */
-  .sidebar{
-    width:var(--sidebar-w);
-    background:linear-gradient(190deg, var(--n-900) 0%, var(--n-800) 100%);
-    color:var(--n-300);
-    display:flex;
-    flex-direction:column;
-    padding:20px 14px calc(18px + env(safe-area-inset-bottom,0px));
-    gap:6px;
-    position:fixed;
-    left:0;
-    top:0;
-    height:100dvh;
-    overflow-y:auto;
-    overflow-x:hidden;
-    z-index:10;
-    isolation:isolate;
-  }
-  .sidebar::before{
-    content:''; position:absolute; z-index:-1; width:220px; height:220px; border-radius:50%;
-    background:radial-gradient(circle, var(--primary) 0%, transparent 70%); opacity:.22;
-    top:-70px; right:-90px; filter:blur(4px);
-  }
-  .brand{ display:flex; align-items:center; gap:10px; padding:6px 8px 18px; }
-  .brand-mark{ width:38px; height:38px; flex:none; }
-  .brand-text .name{ font-family:'Baloo 2', sans-serif; font-weight:700; font-size:18px; line-height:1.1; color:#fff; white-space:nowrap; }
-  .brand-text .who{ font-size:11.5px; color:var(--n-400); margin-top:2px; white-space:nowrap; font-weight:600; }
-
-  .nav-label{ font-size:10.5px; font-weight:800; letter-spacing:.09em; text-transform:uppercase; color:var(--n-500); padding:14px 10px 6px; white-space:nowrap; }
-  .nav{ display:flex; flex-direction:column; gap:4px; }
-  .nav-item{
-    display:flex; align-items:center; gap:11px;
-    border:none; background:transparent; color:var(--n-300);
-    padding:10px 12px; border-radius:14px; cursor:pointer;
-    font-size:13.5px; font-family:'Nunito', sans-serif; font-weight:700; text-align:left;
-    transition: background .15s, color .15s, transform .15s;
-  }
-  .nav-item .ico{ width:19px; height:19px; flex:none; display:flex; }
-  .nav-item .ico svg{ width:100%; height:100%; stroke:currentColor; fill:none; stroke-width:2.1; stroke-linecap:round; stroke-linejoin:round; }
-  .nav-item .nav-text{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .nav-item:hover{ background:rgba(255,255,255,.08); color:#fff; transform:translateX(2px); }
-  .nav-item.active{ background:var(--primary); color:var(--on-accent); box-shadow:0 4px 12px -2px rgba(169,156,245,.5); }
-  .nav-item.active .ico{ color:var(--on-accent); }
-  .nav-item .nav-short{ display:none; }
-  .m-top{ display:none; }
-  /* duas famílias pastel que se complementam: lilás (Life Plan) e menta (Cofrin) */
-  .m-top{ --lp-bg:#ece8ff; --lp-ink:#4a3bb8; --cf-bg:#dcf5ea; --cf-ink:#0b6b45; --sec-bg:var(--lp-bg); --sec-ink:var(--lp-ink); }
-  .m-top.cf{ --sec-bg:var(--cf-bg); --sec-ink:var(--cf-ink); }
-  .m-top .m-group.lp{ --sec-bg:var(--lp-bg); --sec-ink:var(--lp-ink); }
-  .m-top .m-group.cf{ --sec-bg:var(--cf-bg); --sec-ink:var(--cf-ink); }
-  @media (prefers-color-scheme: dark){
-    :root:not([data-theme="light"]) .m-top{ --lp-bg:#2e2760; --lp-ink:#d9d2fb; --cf-bg:#123527; --cf-ink:#8ff0bd; }
-  }
-  :root[data-theme="dark"] .m-top{ --lp-bg:#2e2760; --lp-ink:#d9d2fb; --cf-bg:#123527; --cf-ink:#8ff0bd; }
-  .nav-item.cf-sub{ padding:8px 12px 8px 22px; font-size:13px; }
-  .nav-item.cf-sub .ico{ width:19px; font-size:15px; line-height:19px; justify-content:center; }
-
-  .sidebar-bottom{ margin-top:auto; }
-  .account-row{ padding-top:14px; margin-bottom:12px; border-top:1px solid rgba(255,255,255,.12); display:flex; align-items:center; gap:10px; }
-  .account-avatar{ width:32px; height:32px; border-radius:50%; flex:none; background:var(--n-700); }
-  .account-info{ min-width:0; }
-  .account-name{ font-size:12.5px; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .account-signout{ border:none; background:none; padding:0; color:var(--n-400); font-size:11px; font-weight:700; cursor:pointer; }
-  .account-signout:hover{ color:#fff; text-decoration:underline; }
-  .account-row[hidden] + .sidebar-foot{ border-top:1px solid rgba(255,255,255,.12); }
-
-  .sidebar-foot{
-    padding-top:14px;
-  }
-
-  .auth-overlay{
-    position:fixed; inset:0; z-index:100; background:var(--bg);
-    display:flex; align-items:center; justify-content:center; padding:24px;
-  }
-  .auth-card{ width:100%; max-width:340px; background:var(--surface); border:1px solid var(--border); border-radius:22px; box-shadow:var(--shadow); padding:2rem 1.75rem; }
-  .google-btn{
-    width:100%; display:flex; align-items:center; justify-content:center; gap:10px;
-    border:2px solid var(--border-strong); background:var(--surface); color:var(--text);
-    font-weight:800; font-size:13.5px; padding:11px 16px; border-radius:14px; cursor:pointer;
-  }
-  .google-btn:hover{ border-color:var(--primary); }
-  .auth-note{ text-align:center; font-size:12px; color:var(--text-2); margin-top:14px; min-height:1em; }
-  .foot-stat-label{ font-size:10.5px; color:var(--n-500); font-weight:800; text-transform:uppercase; letter-spacing:.07em; white-space:nowrap; }
-  .foot-stat-value{ font-family:'Baloo 2', sans-serif; font-size:24px; font-weight:700; color:#fff; margin-top:3px; }
-  .foot-bar{ height:8px; border-radius:5px; background:rgba(255,255,255,.14); overflow:hidden; margin-top:8px; }
-  .foot-bar-fill{ height:100%; background:linear-gradient(90deg, var(--primary-500), var(--primary)); border-radius:5px; }
-
-  /* ---------- Main ---------- */
-  .main{ margin-left:var(--sidebar-w); min-width:0; padding:2rem clamp(16px, 4vw, 2.75rem) 3rem; }
-  .eyebrow{ font-size:12px; font-weight:800; letter-spacing:.09em; text-transform:uppercase; color:var(--primary-ink); margin-bottom:6px; }
-  .page-head{ display:flex; justify-content:space-between; align-items:flex-end; gap:1.5rem; flex-wrap:wrap; margin-bottom:1.5rem; }
-  .page-head h1{ font-size:29px; color:var(--text); }
-  .page-sub{ color:var(--text-2); font-size:13.5px; margin-top:6px; max-width:52ch; font-weight:600; }
-  .back-link{ display:inline-flex; align-items:center; gap:6px; border:none; background:none; color:var(--primary-ink); font-weight:800; font-size:12.5px; cursor:pointer; padding:0; margin-bottom:10px; }
-  .back-link:hover{ text-decoration:underline; }
-
-  /* overview hero card */
-  .hero-card{
-    background:var(--surface); border:1px solid var(--border); border-radius:22px;
-    box-shadow:var(--shadow); padding:1.5rem 1.75rem; display:flex; justify-content:space-between;
-    align-items:center; gap:1.5rem; flex-wrap:wrap; margin-bottom:1.75rem;
-    border-bottom:4px solid var(--primary);
-  }
-  .hero-label{ font-size:12px; color:var(--text-2); font-weight:700; margin-bottom:8px; }
-  .hero-value{ font-family:'Baloo 2', sans-serif; font-size:44px; font-weight:700; color:var(--data); line-height:1; }
-  .hero-value .of{ font-size:20px; color:var(--text-2); font-weight:600; }
-  .hero-meta{ text-align:right; font-size:12.5px; color:var(--text-2); font-weight:600; }
-  .hero-meta .date{ color:var(--text); font-weight:800; margin-bottom:2px; }
-  .hero-chip{ display:inline-block; margin-top:6px; font-size:11px; font-weight:800; color:var(--warn-text); background:var(--warn-bg); padding:4px 11px; border-radius:100px; }
-
-  .grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:14px; }
-
-  .pillar-card{
-    background:var(--surface); border:2px solid var(--border); border-radius:20px; padding:1.15rem 1.25rem;
-    cursor:pointer; text-align:left; box-shadow:var(--shadow); border-bottom:5px solid var(--accent);
-    display:flex; flex-direction:column; gap:10px; transition:transform .15s, box-shadow .15s;
-  }
-  .pillar-card:hover{ transform:translateY(-3px) rotate(-0.4deg); border-color:var(--border-strong); }
-  .pillar-top{ display:flex; align-items:center; gap:10px; }
-  .pillar-ico{  width:34px; height:34px; border-radius:12px; background:color-mix(in srgb, var(--accent) 30%, transparent); color:var(--data); display:flex; align-items:center; justify-content:center; flex:none; }
-  .pillar-ico svg{ width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:2.1; stroke-linecap:round; stroke-linejoin:round; }
-  .pillar-name{ font-family:'Baloo 2', sans-serif; font-weight:600; font-size:15px; color:var(--text); }
-  .pillar-metric{ font-size:12.5px; color:var(--text-2); font-weight:700; }
-  .pillar-bar{ height:8px; border-radius:5px; background:var(--surface-2); overflow:hidden; }
-  .pillar-bar-fill{ height:100%; background:var(--accent); border-radius:5px; }
-
-  /* pillar detail */
-  .detail-grid{ display:grid; grid-template-columns:1.15fr .85fr; gap:1.25rem; align-items:start; }
-  @media (max-width: 760px){ .detail-grid{ grid-template-columns:1fr; } }
-  .card{ background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:1.25rem 1.4rem; box-shadow:var(--shadow); }
-  .card + .card{ margin-top:1.1rem; }
-  .card-title{ font-family:'Baloo 2', sans-serif; font-size:13.5px; font-weight:600; color:var(--primary-ink); margin-bottom:12px; }
-  .chart-wrap{ position:relative; height:190px; }
-  .chart-empty{ height:190px; display:flex; align-items:center; justify-content:center; text-align:center; color:var(--text-2); font-size:13px; font-weight:700; padding:0 1rem; background:var(--surface-2); border-radius:16px; }
-
-  .habit-row{ display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:2px dashed var(--border); }
-  .habit-row:last-child{ border-bottom:none; }
-  .habit-row input{ width:19px; height:19px; accent-color:var(--accent-pillar, var(--primary)); flex:none; }
-  .habit-row label{ font-size:13.5px; color:var(--text); font-weight:700; flex:1; }
-  .habit-row.done label{ color:var(--text-2); text-decoration:line-through; }
-
-  .checkin-box textarea{
-    width:100%; min-height:88px; resize:vertical; font-family:inherit; font-size:13px; color:var(--text);
-    background:var(--surface-2); border:2px solid var(--border); border-radius:16px; padding:10px 14px;
-  }
-  .save-note{ font-size:11px; color:var(--text-2); margin-top:6px; display:flex; align-items:center; gap:5px; font-weight:700; }
-  .save-note .dot-ok{ width:7px; height:7px; border-radius:50%; background:var(--success-text); }
-
-  .tip-box{ background:var(--warn-bg); color:var(--warn-text); border-radius:16px; padding:.9rem 1rem; font-size:12.5px; font-weight:600; line-height:1.5; }
-  .tip-box strong{ color:inherit; }
-
-  .obj-line{ font-size:13.5px; color:var(--text-2); margin-top:4px; }
-  .obj-line strong{ color:var(--text); }
-
-  /* ---------- Custom pillar page components ---------- */
-  .pillar-body{ display:block; }
-  .day-toggle-row{ display:flex; gap:6px; flex-wrap:wrap; }
-  .day-toggle{
-    flex:1; min-width:36px; aspect-ratio:1; border-radius:12px; border:2px solid var(--border);
-    background:var(--surface-2); display:flex; align-items:center; justify-content:center;
-    cursor:pointer; font-weight:800; font-size:10.5px; color:var(--text-2); transition:background .15s, border-color .15s, color .15s;
-  }
-  .day-toggle .dow{ letter-spacing:.02em; }
-  .day-toggle.on{ background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
-  .day-toggle.today{ box-shadow:0 0 0 2px var(--accent) inset; }
-  .day-toggle.on.today{ box-shadow:0 0 0 2px var(--surface) inset; }
-
-  .meta-row{ display:flex; justify-content:space-between; align-items:baseline; font-size:12.5px; font-weight:700; color:var(--text-2); margin:12px 0 6px; }
-  .meta-row strong{ color:var(--text); }
-  .mini-bar{ height:8px; border-radius:5px; background:var(--surface-2); overflow:hidden; }
-  .mini-bar-fill{ height:100%; border-radius:5px; background:var(--accent); }
-
-  .chart-card-head{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap; font-size:11.5px; font-weight:700; color:var(--text-2); }
-
-  .stat-duo{ display:grid; grid-template-columns:1fr 1fr; gap:1.1rem; }
-  @media (max-width:520px){ .stat-duo{ grid-template-columns:1fr; } }
-  .stat-number-card.clickable{ cursor:pointer; }
-  .stat-number{ font-family:'Baloo 2', sans-serif; font-size:36px; font-weight:700; color:var(--data); line-height:1; }
-  .stat-number-label{ font-size:12.5px; color:var(--text-2); font-weight:700; margin-top:4px; }
-
-  .record-add{ display:flex; gap:8px; margin-bottom:10px; }
-  .record-add input{ flex:1; }
-  .record-add button, .boost-btn{ border:2px solid var(--accent); background:transparent; color:var(--data); font-weight:800; font-size:12px; padding:0 14px; border-radius:12px; cursor:pointer; white-space:nowrap; transition:background .15s, color .15s; }
-  .record-add button:hover, .boost-btn:hover{ background:var(--accent); color:var(--on-accent); }
-  .record-list{ display:flex; flex-direction:column; gap:6px; }
-  .record-item{ display:flex; justify-content:space-between; align-items:center; gap:10px; background:var(--surface-2); border-radius:12px; padding:8px 12px; font-size:13px; font-weight:700; color:var(--text); }
-  .record-item button{ border:none; background:none; color:var(--text-2); font-size:16px; cursor:pointer; line-height:1; padding:2px 4px; }
-  .record-item button:hover{ color:var(--accent); }
-
-  .upload-zone{ border:2px dashed var(--border-strong); border-radius:16px; padding:1.3rem 1rem; text-align:center; color:var(--text-2); font-size:12.5px; font-weight:700; cursor:pointer; background:var(--surface-2); }
-  .upload-zone.has-file{ border-color:var(--accent); border-style:solid; color:var(--text); background:color-mix(in srgb, var(--accent) 8%, var(--surface)); }
-  .month-tabs{ display:flex; gap:6px; margin-top:12px; flex-wrap:wrap; }
-  .month-tab{ border:2px solid var(--border); background:var(--surface-2); border-radius:100px; padding:5px 14px; font-size:12px; font-weight:800; color:var(--text-2); cursor:pointer; }
-  .month-tab.active{ background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
-
-  .kv-duo{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:2px; }
-  .kv-label{ font-size:11.5px; color:var(--text-2); font-weight:700; }
-  .kv-value{ font-family:'Baloo 2', sans-serif; font-size:21px; font-weight:800; color:var(--data); margin-top:4px; }
-  .kv-delta{ font-size:11px; font-weight:800; margin-left:6px; }
-  .kv-delta.up{ color:var(--data-up); }
-  .kv-delta.down{ color:var(--data-down); }
-
-  .cat-bar-list{ display:flex; flex-direction:column; gap:11px; margin-top:6px; }
-  .cat-bar-top{ display:flex; justify-content:space-between; font-size:12.5px; font-weight:700; color:var(--text); margin-bottom:5px; }
-  .cat-bar-track{ height:9px; border-radius:5px; background:var(--surface-2); overflow:hidden; }
-  .cat-bar-fill{ height:100%; border-radius:5px; background:var(--accent); }
-
-  .goal-row{ margin-bottom:14px; }
-  .goal-row:last-child{ margin-bottom:0; }
-  .goal-top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; gap:10px; }
-  .goal-name{ font-size:13px; font-weight:700; color:var(--text); }
-  .goal-pct{ font-size:12px; font-weight:800; color:var(--data); flex:none; }
-  .goal-track-row{ display:flex; align-items:center; gap:10px; }
-  .goal-track-row .mini-bar{ flex:1; }
-
-  .track-stats{ display:flex; gap:16px; font-size:12px; font-weight:700; color:var(--text-2); margin:0 0 14px; flex-wrap:wrap; }
-  .track-stats strong{ color:var(--text); }
-
-  .rating-table{ display:flex; flex-direction:column; gap:11px; margin-top:2px; }
-  .rating-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
-  .rating-name{ font-size:13px; font-weight:700; color:var(--text); flex:none; width:64px; }
-  .rating-dots{ display:flex; gap:6px; }
-  .rating-dot{ width:16px; height:16px; border-radius:50%; border:2px solid var(--dotcolor); background:transparent; cursor:pointer; padding:0; }
-  .rating-dot.filled{ background:var(--dotcolor); }
-
-  .field-label{ font-size:12px; color:var(--text-2); font-weight:700; margin-bottom:6px; }
-  .text-input{ width:100%; border:2px solid var(--border); background:var(--surface-2); border-radius:12px; padding:9px 12px; font:inherit; font-size:13px; color:var(--text); resize:vertical; }
-
-  .book-item{ margin-bottom:16px; }
-  .book-item:last-child{ margin-bottom:0; }
-  .book-top{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
-  .book-title{ font-size:13.5px; font-weight:700; color:var(--text); }
-  .book-author{ font-size:11.5px; color:var(--text-2); font-weight:600; }
-  .book-pct{ font-size:12px; font-weight:800; color:var(--data); flex:none; }
-  .book-track-row{ display:flex; align-items:center; gap:10px; margin-top:6px; }
-  .book-track-row .mini-bar{ flex:1; }
-  .book-meta{ font-size:11px; color:var(--text-2); font-weight:600; margin-top:5px; }
-
-  .stepper-row{ display:flex; align-items:center; gap:12px; }
-  .stepper-btn{ width:32px; height:32px; border-radius:10px; border:2px solid var(--border-strong); background:var(--surface-2); color:var(--text); font-weight:800; font-size:16px; cursor:pointer; flex:none; }
-  .stepper-btn:hover{ border-color:var(--accent); color:var(--accent); }
-  .stepper-value{ font-family:'Baloo 2', sans-serif; font-size:20px; font-weight:700; color:var(--text); min-width:44px; text-align:center; }
-
-  .ritual-row{ display:flex; justify-content:space-between; align-items:center; gap:10px; padding:9px 0; border-bottom:2px dashed var(--border); }
-  .ritual-row:last-child{ border-bottom:none; }
-  .ritual-name{ font-size:13px; font-weight:700; color:var(--text); }
-  .ritual-btn{ border:2px solid var(--accent); background:transparent; color:var(--data); font-weight:800; font-size:11.5px; padding:4px 14px; border-radius:100px; cursor:pointer; flex:none; }
-  .ritual-btn.done{ background:var(--accent); color:var(--on-accent); }
-
-
-  .cf-cta{ display:flex; align-items:center; gap:14px; width:100%; text-align:left; cursor:pointer; margin-bottom:1.1rem; color:var(--text); font-family:inherit; border-left:5px solid var(--primary); }
-  .cf-cta-ico{ font-size:28px; flex:none; }
-  .cf-cta-txt{ flex:1; min-width:0; }
-  .cf-cta-txt b{ display:block; font-family:'Baloo 2',sans-serif; font-size:16px; }
-  .cf-cta-txt small{ display:block; font-size:12.5px; color:var(--text-2); margin-top:2px; line-height:1.4; }
-  .cf-cta-go{ font-size:26px; color:var(--text-2); flex:none; }
-
-  .m-account{ display:none; }
-  .detail-grid > *, .stat-duo > *{ min-width:0; }
-
-  /* Celular: a sidebar vira uma barra de abas fixa embaixo, e o conteúdo usa a largura toda.
-     A conta (foto + Sair) aparece no fim da Visão geral (.m-account). */
-  @media (max-width: 640px){
-    :root{ --sidebar-w:0px; --tabbar-h:0px; }
-    .sidebar{ display:none; }
-
-    /* Menu de seções no topo: o botão mostra onde você está; ao abrir, lista Life Plan e Cofrin */
-    .m-top{
-      display:block; position:sticky; top:0; z-index:30; background:var(--bg);
-      padding:calc(8px + env(safe-area-inset-top,0px)) 14px 8px; border-bottom:1px solid var(--border);
-    }
-    .m-top-btn{
-      width:100%; height:44px; display:flex; align-items:center; gap:10px; padding:0 14px;
-      border:1px solid transparent; border-radius:14px; cursor:pointer;
-      background:var(--sec-bg); color:var(--sec-ink); font:800 15px 'Nunito',sans-serif; text-align:left;
-    }
-    .m-top-btn .ico{ width:20px; height:20px; display:flex; flex:none; font-size:17px; line-height:20px; justify-content:center; }
-    .m-top-btn .ico svg{ width:100%; height:100%; stroke:currentColor; fill:none; stroke-width:2.1; stroke-linecap:round; stroke-linejoin:round; }
-    .m-top-btn .lbl{ flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .m-top-btn .grp{ font-size:11px; font-weight:800; opacity:.7; letter-spacing:.04em; text-transform:uppercase; }
-    .m-top-btn .chev{ font-size:11px; transition:transform .2s; }
-    .m-top.open .m-top-btn .chev{ transform:rotate(180deg); }
-    .m-panel{
-      position:absolute; left:10px; right:10px; top:calc(100% - 2px); max-height:calc(100dvh - 90px); overflow-y:auto;
-      background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:10px;
-      box-shadow:0 18px 40px -12px rgba(17,24,39,.35); display:none;
-    }
-    .m-top.open .m-panel{ display:block; }
-    .m-group{ border-radius:14px; padding:10px; background:var(--sec-bg); }
-    .m-group + .m-group{ margin-top:10px; }
-    .m-group-title{ font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--sec-ink); opacity:.75; padding:0 4px 8px; }
-    .m-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-    .m-item{
-      display:flex; align-items:center; gap:9px; min-height:46px; padding:8px 10px; border-radius:12px; cursor:pointer;
-      background:var(--surface); border:1px solid var(--border); color:var(--text); font:700 13.5px 'Nunito',sans-serif; text-align:left;
-    }
-    .m-item .ico{ width:20px; height:20px; display:flex; flex:none; font-size:16px; line-height:20px; justify-content:center; color:var(--sec-ink); }
-    .m-item .ico svg{ width:100%; height:100%; stroke:currentColor; fill:none; stroke-width:2.1; stroke-linecap:round; stroke-linejoin:round; }
-    .m-item.active{ background:var(--sec-ink); border-color:var(--sec-ink); color:var(--sec-bg); }
-    .m-item.active .ico{ color:var(--sec-bg); }
-    .m-backdrop{ position:fixed; inset:0; z-index:-1; background:rgba(17,24,39,.35); display:none; }
-    .m-top.open .m-backdrop{ display:block; }
-    #cofrin{ --cf-sticky-top:calc(60px + env(safe-area-inset-top,0px)); }
-
-    .main{ padding:1.25rem 16px calc(28px + env(safe-area-inset-bottom,0px)); }
-    .page-head{ margin-bottom:1.1rem; }
-    .page-head h1{ font-size:25px; }
-    .hero-card{ padding:1.15rem 1.25rem; margin-bottom:1.25rem; gap:1rem; }
-    .hero-value{ font-size:38px; }
-    .hero-meta{ text-align:left; }
-    .grid{ grid-template-columns:1fr 1fr; gap:10px; }
-    .pillar-card{ padding:.95rem 1rem; }
-    .pillar-top{ flex-direction:column; align-items:flex-start; gap:8px; }
-    .card{ padding:1.1rem 1.1rem; }
-    .day-toggle-row{ gap:4px; flex-wrap:nowrap; }
-    .day-toggle{ min-width:0; border-radius:10px; font-size:10px; }
-    .record-add{ flex-wrap:wrap; }
-    .record-add input{ min-width:0; }
-    .record-add button{ padding:9px 14px; }
-
-    .m-account{
-      display:flex; align-items:center; gap:10px; margin-top:1.5rem; padding:12px 14px;
-      background:var(--surface); border:1px solid var(--border); border-radius:16px;
-    }
-    .m-account img{ width:32px; height:32px; border-radius:50%; background:var(--surface-2); flex:none; }
-    .m-account .who{ flex:1; min-width:0; font-size:13px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .m-account button{ border:2px solid var(--border-strong); background:none; color:var(--text); font-weight:800; font-size:12px; padding:6px 14px; border-radius:100px; cursor:pointer; }
-
-    /* botão + e aviso do Cofrin ficam acima da barra de abas */
-    #cofrin .fab{ bottom:calc(var(--tabbar-h) + 16px + env(safe-area-inset-bottom,0px)); right:16px; }
-    #cofrin #toast{ bottom:calc(var(--tabbar-h) + 84px + env(safe-area-inset-bottom,0px)); }
-    #cofrin .loginCard{ padding:28px 22px; }
-  }
-</style>
+<link rel="stylesheet" href="app.css">
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 3 3 5-6"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></symbol>
+    <symbol id="i-cart" viewBox="0 0 24 24"><path d="M3 4h2.5l2 11h10l2-8H7"/><circle cx="9" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/></symbol>
+    <symbol id="i-bill" viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></symbol>
+    <symbol id="i-paw" viewBox="0 0 24 24"><circle cx="6" cy="11" r="1.8"/><circle cx="10" cy="6.5" r="1.8"/><circle cx="14" cy="6.5" r="1.8"/><circle cx="18" cy="11" r="1.8"/><path d="M12 12c-3 0-5 2.6-5 4.6 0 1.6 1.4 2.4 2.8 2.4 1 0 1.5-.4 2.2-.4s1.2.4 2.2.4c1.4 0 2.8-.8 2.8-2.4 0-2-2-4.6-5-4.6z"/></symbol>
+    <symbol id="i-tool" viewBox="0 0 24 24"><path d="M14.5 6.5a4 4 0 0 0-5 5L4 17l3 3 5.5-5.5a4 4 0 0 0 5-5l-2.5 2.5-2.5-.5-.5-2.5z"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7M12 17h.01"/></symbol>
+    <symbol id="i-out" viewBox="0 0 24 24"><path d="M10 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h5M15 8l4 4-4 4M19 12H9"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 5-7 7 7 7"/></symbol>
+    <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
+    <symbol id="i-dots" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></symbol>
+  </defs>
+</svg>
 
-<div class="app">
-  <header class="m-top" id="mTop">
-    <div class="m-backdrop" id="mBackdrop"></div>
-    <button type="button" class="m-top-btn" id="mTopBtn" aria-expanded="false" aria-controls="mPanel"></button>
-    <div class="m-panel" id="mPanel"></div>
-  </header>
-  <aside class="sidebar">
-    <div class="brand">
-      <svg class="brand-mark" viewBox="0 0 40 40">
-        <defs>
-          <linearGradient id="brandGrad" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stop-color="#d9d2fb"/>
-            <stop offset="1" stop-color="#a99cf5"/>
-          </linearGradient>
-        </defs>
-        <circle cx="20" cy="20" r="19" fill="url(#brandGrad)"/>
-        <path d="M6 23c3-2 5-2 8 0s5 2 8 0 5-2 8 0" stroke="#fff" stroke-width="2.1" fill="none" stroke-linecap="round"/>
-        <path d="M6 28c3-2 5-2 8 0s5 2 8 0 5-2 8 0" stroke="#fff" stroke-width="2.1" fill="none" stroke-linecap="round" opacity=".55"/>
-      </svg>
-      <div class="brand-text">
-        <div class="name">Ericzin's Life Plan</div>
-        <div class="who">painel semanal</div>
-      </div>
-    </div>
-
-    <div class="nav-label">Início</div>
-    <nav class="nav" id="navOverview"></nav>
-    <div class="nav-label">Pilares</div>
-    <nav class="nav" id="navPillars"></nav>
-    <div class="nav-label">Casa</div>
-    <nav class="nav" id="navApps"></nav>
-
-    <div class="sidebar-bottom">
-      <div class="account-row" id="accountRow" hidden>
-        <img class="account-avatar" id="accountAvatar" alt="">
-        <div class="account-info">
-          <div class="account-name" id="accountName"></div>
-          <button class="account-signout" id="accountSignOut">Sair</button>
-        </div>
-      </div>
-
-      <div class="sidebar-foot">
-        <div class="foot-stat-label">Consistência da semana</div>
-        <div class="foot-stat-value" id="footConsistency">0%</div>
-        <div class="foot-bar"><div class="foot-bar-fill" id="footBar" style="width:0%"></div></div>
-      </div>
-    </div>
-  </aside>
-
-  <main class="main" id="main"></main>
-
-  <!-- A seção Meu Cofrin é gerada a partir do moneyericana/index.html (veja README). Não edite entre os marcadores. -->
-  <!-- COFRIN:INICIO -->
-<!-- ================= MEU COFRIN (gerado a partir do moneyericana) ================= -->
-<div id="cofrin" class="main" hidden>
 <!-- ================= LOGIN ================= -->
 <div id="loginView">
   <div class="loginCard">
-    <div class="brand">Meu Cofrin<small>organizador financeiro da casa</small></div>
+    <div class="brand">Ericzin<small>finanças e rotina num lugar só</small></div>
     <form id="loginForm">
       <div class="field"><label>E-mail</label><input type="email" id="loginEmail" autocomplete="email" required></div>
       <div class="field"><label>Senha</label><input type="password" id="loginPass" autocomplete="current-password" required></div>
@@ -532,7 +77,7 @@
 <!-- ================= VERIFICAÇÃO DE E-MAIL ================= -->
 <div id="verifyView" class="hidden">
   <div class="loginCard">
-    <div class="brand">Meu Cofrin<small>confirme seu e-mail</small></div>
+    <div class="brand">Ericzin<small>confirme seu e-mail</small></div>
     <div class="verifyBody">
       <p>📬 Enviamos um link de confirmação para<br><b id="verifyEmail"></b></p>
       <p class="verifyHint">Abra o e-mail e toque no link — esta tela avança sozinha em alguns segundos. Não achou? Confira a caixa de spam.</p>
@@ -544,60 +89,60 @@
   </div>
 </div>
 
+
 <!-- ================= APP ================= -->
 <div id="appView" class="hidden">
-  <header class="cfHeader">
-    <div class="headerRow">
-      <h1 class="cfTitle">Meu Cofrin<small>finanças da casa</small></h1>
-      <div class="userChip">
-        <button type="button" class="ajudaBtn" id="btnGuia" title="Guia do app" aria-label="Abrir guia do app">?</button>
-        <button type="button" class="perfilBtn" id="btnPerfil" title="Meu perfil"><span class="avatar" id="userAvatar">👤</span><b id="userName"></b></button>
-        <button id="btnLogout">sair</button>
-      </div>
-    </div>
-    <div class="monthBar">
-      <button id="prevMonth" aria-label="Mês anterior">‹</button>
-      <div class="monthLabel mono" id="monthLabel"></div>
-      <button id="nextMonth" aria-label="Próximo mês">›</button>
-    </div>
-    <div class="tabsMenu" id="tabsMenu">
-      <button type="button" class="tabsToggle" id="tabsToggle" aria-expanded="false" aria-controls="tabsList">
-        <span id="tabsToggleLabel">📊 Resumo</span><span class="chev">▼</span>
-      </button>
-      <nav class="tabs" id="tabsList">
-        <button data-tab="dash" class="active">📊 Resumo</button>
-        <button data-tab="tx">💸 Lançamentos</button>
-        <button data-tab="relat">🔎 Raio-X</button>
-        <button data-tab="mercado">🛒 Mercado</button>
-        <button data-tab="contas">🏠 Contas da casa</button>
-        <button data-tab="metas">✅ Metas do dia</button>
-        <button data-tab="pets">🐾 Coleção</button>
-        <button data-tab="admin" class="hidden" id="tabAdminBtn">🛠️ Admin</button>
-      </nav>
-    </div>
-  </header>
+  <aside class="side" aria-label="Menu">
+    <div class="sideBrand"><img src="icons/icon-192.png" alt="" width="36" height="36"><div><b>Ericzin</b><small>finanças e rotina</small></div></div>
+    <nav>
+      <button type="button" data-tab="dash"><svg class="i" aria-hidden="true"><use href="#i-home"/></svg><span>Início</span></button>
+      <button type="button" data-tab="tx"><svg class="i" aria-hidden="true"><use href="#i-list"/></svg><span>Lançamentos</span></button>
+      <button type="button" data-tab="relat"><svg class="i" aria-hidden="true"><use href="#i-chart"/></svg><span>Raio-X</span></button>
+      <button type="button" data-tab="metas"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>Metas do dia</span></button>
+      <div class="sideSep"></div>
+      <button type="button" data-tab="mercado"><svg class="i" aria-hidden="true"><use href="#i-cart"/></svg><span>Mercado</span></button>
+      <button type="button" data-tab="contas"><svg class="i" aria-hidden="true"><use href="#i-bill"/></svg><span>Contas da casa</span></button>
+      <button type="button" data-tab="pets"><svg class="i" aria-hidden="true"><use href="#i-paw"/></svg><span>Coleção</span></button>
+      <button type="button" data-tab="admin" id="tabAdminBtn" class="hidden"><svg class="i" aria-hidden="true"><use href="#i-tool"/></svg><span>Admin</span></button>
+    </nav>
+  </aside>
 
-  <main>
-    <!-- ===== Resumo ===== -->
+  <div class="shell">
+    <header class="appTop">
+      <div class="topRow">
+        <button type="button" class="iconBtn hidden" id="btnVoltar" aria-label="Voltar"><svg class="i" aria-hidden="true"><use href="#i-left"/></svg></button>
+        <h1 id="topTitulo">Início</h1>
+        <button type="button" class="perfilBtn" id="btnPerfil" title="Meu perfil"><b id="userName"></b><span class="avatar" id="userAvatar">👤</span></button>
+      </div>
+      <div class="monthBar" id="monthBar">
+        <button id="prevMonth" aria-label="Mês anterior"><svg class="i" aria-hidden="true"><use href="#i-left"/></svg></button>
+        <div class="monthLabel" id="monthLabel"></div>
+        <button id="nextMonth" aria-label="Próximo mês"><svg class="i" aria-hidden="true"><use href="#i-right"/></svg></button>
+      </div>
+    </header>
+
+    <main>
+    <!-- ===== Início ===== -->
     <section id="tab-dash">
       <div class="card kpi saldoHero" id="cardSaldo">
         <div class="lbl">Saldo do mês</div>
         <div class="val" id="kSaldo">R$ 0,00</div>
         <div class="sub" id="kSaldoSub"></div>
+        <div class="heroSplit">
+          <div><span>Receitas</span><b id="kReceitas">R$ 0,00</b></div>
+          <div><span>Despesas</span><b id="kDespesas">R$ 0,00</b></div>
+        </div>
         <div class="usoBox hidden" id="usoBox">
           <div class="usoT" id="kUsoTxt"></div>
           <div class="usoBar"><span id="kUsoBar" style="width:0"></span></div>
         </div>
       </div>
-      <div class="rxTiles four">
-        <div><span>Receitas</span><b class="pos" id="kReceitas">R$ 0,00</b></div>
-        <div><span>Despesas</span><b class="neg" id="kDespesas">R$ 0,00</b></div>
+      <div class="rxTiles two">
         <div><span>Por dia</span><b id="kDia">—</b></div>
         <div><span id="kProjL">Fecha em</span><b id="kProj">—</b></div>
       </div>
-      <h2 class="section">Para onde foi o dinheiro</h2>
+      <div class="secHead"><h2 class="section">Para onde foi o dinheiro</h2><button type="button" class="linkBtn" id="btnRaioX">Ver Raio-X ›</button></div>
       <div class="card"><div class="rxRows" id="dashCats"><div class="empty">Sem lançamentos ainda.</div></div></div>
-      <button type="button" class="btnPrimary rxIr" id="btnRaioX">🔎 Abrir o Raio-X completo</button>
       <h2 class="section">Últimos 6 meses</h2>
       <div class="card chartBox"><canvas id="chartTrend"></canvas></div>
       <h2 class="section">Maiores gastos do mês</h2>
@@ -606,13 +151,18 @@
 
     <!-- ===== Lançamentos ===== -->
     <section id="tab-tx" class="hidden">
-      <div class="toolRow">
-        <button class="btnGhost" id="btnImportCSV">📥 Importar CSV/PDF</button>
-        <button class="btnGhost" id="btnCats">🏷️ Categorias</button>
-        <button class="btnGhost" id="btnCampos">⚙️ Campos personalizados</button>
-        <button class="btnGhost" id="btnTxSel">🗑️ Excluir vários</button>
+      <div class="txTop">
+        <div class="chipRow" id="txFilter"></div>
+        <div class="menuWrap">
+          <button type="button" class="iconBtn" id="btnTxMenu" aria-label="Mais opções" aria-haspopup="true"><svg class="i" aria-hidden="true"><use href="#i-dots"/></svg></button>
+          <div class="menu hidden" id="txMenu" role="menu">
+            <button type="button" id="btnImportCSV" role="menuitem">📥 Importar CSV/PDF</button>
+            <button type="button" id="btnCats" role="menuitem">🏷️ Categorias</button>
+            <button type="button" id="btnCampos" role="menuitem">⚙️ Campos personalizados</button>
+            <button type="button" id="btnTxSel" role="menuitem">🗑️ Excluir vários</button>
+          </div>
+        </div>
       </div>
-      <div class="chipRow" id="txFilter"></div>
       <div class="txSelBar hidden" id="txSelBar">
         <label class="chkLine" style="padding:0"><input type="checkbox" id="txSelAll" class="txSelChk"> Marcar todos</label>
         <span class="selCount" id="txSelCount">0 selecionados</span>
@@ -648,7 +198,7 @@
         </div>
         <div class="btns">
           <button type="button" id="btnNotaFoto">📷 Escanear nota</button>
-          <button type="button" id="btnNotaManual" style="background:rgba(255,255,255,.18);color:#fff;box-shadow:none">✏️ Digitar nota</button>
+          <button type="button" id="btnNotaManual" class="ghostOnHero">✏️ Digitar nota</button>
         </div>
       </div>
 
@@ -744,9 +294,9 @@
     <!-- ===== Metas do dia ===== -->
     <section id="tab-metas" class="hidden">
       <div class="diaBar">
-        <button class="nav" id="prevDia" aria-label="Dia anterior">‹</button>
+        <button class="nav" id="prevDia" aria-label="Dia anterior"><svg class="i" aria-hidden="true"><use href="#i-left"/></svg></button>
         <div class="diaLabel" id="diaLabel"></div>
-        <button class="nav" id="nextDia" aria-label="Próximo dia">›</button>
+        <button class="nav" id="nextDia" aria-label="Próximo dia"><svg class="i" aria-hidden="true"><use href="#i-right"/></svg></button>
         <button class="btnHoje" id="btnHojeDia">Hoje</button>
       </div>
       <div class="card metaHero">
@@ -758,14 +308,16 @@
         </div>
       </div>
       <div id="bauBox"></div>
-      <h2 class="section">Suas metas</h2>
       <div class="card" id="metaList"><div class="empty">Nenhuma meta programada para este dia. Crie uma abaixo! ✨</div></div>
-      <h2 class="section">Programar nova meta</h2>
+      <h2 class="section">Nova meta</h2>
       <form class="card metaForm" id="metaForm">
-        <input id="metaInput" placeholder="Ex.: passear com o cachorro, ler 20 páginas…" maxlength="120" autocomplete="off">
-        <div class="field"><label>Repetir em quais dias?</label>
+        <div class="metaAdd">
+          <input id="metaInput" placeholder="Ex.: passear com o cachorro, ler 20 páginas…" maxlength="120" autocomplete="off">
+          <button type="submit" class="btnAddMeta" aria-label="Programar meta"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg></button>
+        </div>
+        <div class="field"><label>Repete em</label>
           <div class="diasRow" id="diasRow">
-            <button type="button" class="diaChip" id="chipTodos">✨ Todos os dias</button>
+            <button type="button" class="diaChip" id="chipTodos">Todo dia</button>
             <button type="button" class="diaChip" data-d="1">Seg</button>
             <button type="button" class="diaChip" data-d="2">Ter</button>
             <button type="button" class="diaChip" data-d="3">Qua</button>
@@ -775,11 +327,24 @@
             <button type="button" class="diaChip" data-d="0">Dom</button>
           </div>
         </div>
-        <div class="metaFormRow">
-          <div class="field"><label>Horário (opcional) 🔔 avisa na hora</label><input type="time" id="metaHora"></div>
-          <button type="submit" class="btnAddMeta">+ Programar</button>
-        </div>
+        <div class="field"><label>Horário (opcional) · avisa na hora 🔔</label><input type="time" id="metaHora"></div>
       </form>
+    </section>
+
+    <!-- ===== Mais (celular) ===== -->
+    <section id="tab-mais" class="hidden">
+      <div class="listGroup">
+        <button type="button" class="listRow" data-tab="mercado"><span class="rowIco"><svg class="i" aria-hidden="true"><use href="#i-cart"/></svg></span><span class="rowTxt"><b>Mercado</b><small>Notas fiscais e preço dos produtos</small></span><svg class="i chev" aria-hidden="true"><use href="#i-right"/></svg></button>
+        <button type="button" class="listRow" data-tab="contas"><span class="rowIco"><svg class="i" aria-hidden="true"><use href="#i-bill"/></svg></span><span class="rowTxt"><b>Contas da casa</b><small>Aluguel, luz, água… o que já foi pago</small></span><svg class="i chev" aria-hidden="true"><use href="#i-right"/></svg></button>
+        <button type="button" class="listRow" data-tab="pets"><span class="rowIco"><svg class="i" aria-hidden="true"><use href="#i-paw"/></svg></span><span class="rowTxt"><b>Coleção de pets</b><small>Os bichinhos que você ganhou nos baús</small></span><svg class="i chev" aria-hidden="true"><use href="#i-right"/></svg></button>
+        <button type="button" class="listRow hidden" data-tab="admin" id="maisAdmin"><span class="rowIco"><svg class="i" aria-hidden="true"><use href="#i-tool"/></svg></span><span class="rowTxt"><b>Admin</b><small>Sorteio e monstros dos baús</small></span><svg class="i chev" aria-hidden="true"><use href="#i-right"/></svg></button>
+      </div>
+      <div class="listGroup">
+        <button type="button" class="listRow" id="maisPerfil"><span class="rowIco"><svg class="i" aria-hidden="true"><use href="#i-user"/></svg></span><span class="rowTxt"><b>Meu perfil</b><small>Foto, nome, avisos e senha</small></span><svg class="i chev" aria-hidden="true"><use href="#i-right"/></svg></button>
+        <button type="button" class="listRow" id="maisGuia"><span class="rowIco"><svg class="i" aria-hidden="true"><use href="#i-help"/></svg></span><span class="rowTxt"><b>Guia do app</b><small>Um tour rápido por cada tela</small></span><svg class="i chev" aria-hidden="true"><use href="#i-right"/></svg></button>
+        <button type="button" class="listRow" id="maisSair"><span class="rowIco"><svg class="i" aria-hidden="true"><use href="#i-out"/></svg></span><span class="rowTxt"><b>Sair da conta</b><small>Encerrar a sessão neste aparelho</small></span><svg class="i chev" aria-hidden="true"><use href="#i-right"/></svg></button>
+      </div>
+      <p class="appFooter"><a href="https://seucofrin.pages.dev/privacidade.html" target="_blank" rel="noopener">Política de Privacidade</a></p>
     </section>
 
     <!-- ===== Coleção de pets ===== -->
@@ -832,11 +397,18 @@
         <button type="button" class="btnPrimary" id="admSalvar">Salvar</button>
       </div>
     </section>
-  </main>
+    </main>
+  </div>
 
-  <footer class="appFooter"><a href="https://seucofrin.pages.dev/privacidade.html" target="_blank" rel="noopener">Política de Privacidade</a></footer>
+  <nav class="tabbar" aria-label="Menu principal">
+    <button type="button" data-tab="dash"><svg class="i" aria-hidden="true"><use href="#i-home"/></svg><span>Início</span></button>
+    <button type="button" data-tab="tx"><svg class="i" aria-hidden="true"><use href="#i-list"/></svg><span>Lançamentos</span></button>
+    <button type="button" data-tab="relat"><svg class="i" aria-hidden="true"><use href="#i-chart"/></svg><span>Raio-X</span></button>
+    <button type="button" data-tab="metas"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>Metas</span></button>
+    <button type="button" data-tab="mais"><svg class="i" aria-hidden="true"><use href="#i-grid"/></svg><span>Mais</span></button>
+  </nav>
 
-  <button class="fab" id="fabAdd" aria-label="Novo lançamento">+</button>
+  <button class="fab" id="fabAdd" aria-label="Novo lançamento"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg></button>
 </div>
 
 <!-- ===== Bottom sheet dos filtros do Raio-X ===== -->
@@ -1097,10 +669,16 @@
       <button class="btnGhost" type="submit">Atualizar senha</button>
     </form>
     <h4 class="perfilSub">Meus dados</h4>
-    <div class="notifSub" style="margin-bottom:8px">Baixe uma cópia de tudo que você guardou no Meu Cofrin (arquivo JSON) — seu direito de portabilidade pela LGPD.</div>
+    <div class="notifSub" style="margin-bottom:8px">Baixe uma cópia de tudo que você guardou no Ericzin (arquivo JSON) — seu direito de portabilidade pela LGPD.</div>
     <button type="button" class="btnGhost" id="btnExportar">⬇️ Exportar meus dados</button>
     <button type="button" class="btnDanger" id="btnExcluirConta" style="margin-top:8px">🗑️ Excluir minha conta e todos os dados</button>
+    <h4 class="perfilSub">Conta</h4>
+    <div class="notifRow" style="gap:8px">
+      <button type="button" class="btnGhost" id="btnGuia" style="flex:1">? Guia do app</button>
+      <button type="button" class="btnGhost" id="btnLogout" style="flex:1">Sair da conta</button>
+    </div>
     <div class="modalActions"><button type="button" class="btnGhost" data-close style="flex:1">Fechar</button></div>
+    <div class="loginFooter"><a href="https://seucofrin.pages.dev/privacidade.html" target="_blank" rel="noopener">Política de Privacidade</a></div>
   </div>
 </div>
 
@@ -1128,1332 +706,7 @@
 </div>
 
 <div id="toast"></div>
-</div>
-<!-- COFRIN:FIM -->
-</div>
 
-<div class="auth-overlay" id="authOverlay" hidden>
-  <div class="auth-card">
-    <svg class="brand-mark" viewBox="0 0 40 40" style="width:52px;height:52px;margin:0 auto 14px;display:block;">
-      <defs>
-        <linearGradient id="brandGradAuth" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stop-color="#d9d2fb"/>
-          <stop offset="1" stop-color="#a99cf5"/>
-        </linearGradient>
-      </defs>
-      <circle cx="20" cy="20" r="19" fill="url(#brandGradAuth)"/>
-      <path d="M6 23c3-2 5-2 8 0s5 2 8 0 5-2 8 0" stroke="#fff" stroke-width="2.1" fill="none" stroke-linecap="round"/>
-      <path d="M6 28c3-2 5-2 8 0s5 2 8 0 5-2 8 0" stroke="#fff" stroke-width="2.1" fill="none" stroke-linecap="round" opacity=".55"/>
-    </svg>
-    <h1 style="text-align:center;font-size:22px;">Ericzin's Life Plan</h1>
-    <div class="page-sub" style="text-align:center;margin:8px auto 22px;max-width:34ch;">Entre pra ver seus pilares salvos e sincronizados em qualquer aparelho.</div>
-    <button class="google-btn" id="googleSignInBtn">
-      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.9c1.7-1.57 2.7-3.88 2.7-6.62Z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.9-2.26c-.8.54-1.84.86-3.06.86-2.35 0-4.34-1.59-5.05-3.72H.96v2.33A9 9 0 0 0 9 18Z"/><path fill="#FBBC05" d="M3.95 10.7A5.4 5.4 0 0 1 3.67 9c0-.59.1-1.17.28-1.7V4.96H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.04l2.99-2.33Z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.46 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.96l2.99 2.34C4.66 5.17 6.65 3.58 9 3.58Z"/></svg>
-      Entrar com Google
-    </button>
-    <div class="auth-note" id="authNote"></div>
-  </div>
-</div>
-
-<!-- O Meu Cofrin usa Chart.js 4; guardamos com outro nome antes do 3.9 do LifePlan ocupar window.Chart -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-<script>window.CofrinChart = window.Chart;</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-check-compat.js"></script>
-<script>
-(function(){
-  "use strict";
-
-  var ICONS = {
-    overview: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M14.6 9.4 12.9 12.9 9.4 14.6 11.1 11.1Z"/></svg>',
-    saude:   '<svg viewBox="0 0 24 24"><path d="M3 12h4l2-5 3 10 2-7 2 2h5"/></svg>',
-    sono:    '<svg viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/></svg>',
-    mente:   '<svg viewBox="0 0 24 24"><path d="M12 3c1 3 3 5 6 6-3 1-5 3-6 6-1-3-3-5-6-6 3-1 5-3 6-6Z"/></svg>',
-    leitura: '<svg viewBox="0 0 24 24"><path d="M4 5.7C4 5 4.6 4.5 5.5 4.5H11V19H5.5C4.6 19 4 18.5 4 17.8Z"/><path d="M20 5.7c0-.7-.6-1.2-1.5-1.2H13V19h5.5c.9 0 1.5-.5 1.5-1.2Z"/></svg>',
-    financas:'<svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="12" rx="2.2"/><path d="M3 10.2h18"/><circle cx="16.4" cy="14.4" r="1.3"/></svg>',
-    carreira:'<svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="11" rx="2"/><path d="M8.3 8V6.3A1.8 1.8 0 0 1 10.1 4.5h3.8a1.8 1.8 0 0 1 1.8 1.8V8"/><path d="M3 13.3h18"/></svg>',
-    cofrin:  '<svg viewBox="0 0 24 24"><path d="M19 10.5c0-3.6-3.1-6-7-6s-7.5 2.4-7.5 6.5c0 2 1 3.6 2.5 4.7V19h3v-2h3v2h3v-3.3c1.2-.8 2-1.8 2.4-3.2H21v-3h-2.1Z"/><path d="M10 7.5h4"/><circle cx="15.5" cy="10" r=".4"/></svg>'
-  };
-
-  /* color = brand purple used in the sidebar/overview. accent = the pillar's own color, used only inside its detail page. */
-  var PILLARS = [
-    { id:'saude',    icon:'saude',    name:'Saúde & Corpo',   short:'Saúde',    color:'#a99cf5', accent:'#6fcfa8', custom:true },
-    { id:'sono',     icon:'sono',     name:'Sono & Descanso', short:'Sono',  color:'#8f80ee', accent:'#f4b184', custom:true },
-    { id:'mente',    icon:'mente',    name:'Mente',            color:'#a99cf5', accent:'#b0a2f5', custom:true },
-    { id:'leitura',  icon:'leitura',  name:'Estudo',           color:'#8f80ee', accent:'#ecca78', custom:true },
-    { id:'financas', icon:'financas', name:'Finanças',         color:'#a99cf5', accent:'#eb98b4', custom:true },
-    { id:'carreira', icon:'carreira', name:'Carreira',         color:'#8f80ee', accent:'#8fa2ee', custom:true }
-  ];
-
-  var WEEKDAYS = [
-    { key:'seg', label:'SEG' }, { key:'ter', label:'TER' }, { key:'qua', label:'QUA' },
-    { key:'qui', label:'QUI' }, { key:'sex', label:'SEX' }, { key:'sab', label:'SÁB' }, { key:'dom', label:'DOM' }
-  ];
-
-  var STORAGE_KEY = 'painelVidaExec';
-  var PAGE_KEY = 'painelVidaExecPage';
-
-  /* ---------- Cloud sync (Firebase) ----------
-     Paste your web app's Firebase config below (Firebase Console > Project settings > General > Your apps).
-     Until a real apiKey is pasted in, or if the Firebase scripts fail to load (e.g. inside a sandboxed
-     preview), the app quietly falls back to plain browser localStorage — same as before. */
-  var FIREBASE_CONFIG = {
-    apiKey: "AIzaSyAj6qA0idBpsjv8oR759oVnxYhG72JTwzk",
-    authDomain: "ericzinlifeplan.firebaseapp.com",
-    projectId: "ericzinlifeplan",
-    storageBucket: "ericzinlifeplan.firebasestorage.app",
-    messagingSenderId: "394974980536",
-    appId: "1:394974980536:web:64f4026de16c9ad880074d"
-  };
-  var FIRESTORE_COLLECTION = 'paineis';
-
-  var cloudMode = false;
-  var cloudUser = null;
-  var cloudData = null;
-  var cloudSaveTimer = null;
-
-  function cloudConfigured(){
-    return typeof firebase !== 'undefined' && FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey.indexOf('COLE_AQUI') === -1;
-  }
-  function showAuthOverlay(note){
-    document.getElementById('authNote').textContent = note || '';
-    document.getElementById('authOverlay').hidden = false;
-  }
-  function hideAuthOverlay(){
-    document.getElementById('authOverlay').hidden = true;
-  }
-  function updateAccountRow(){
-    var row = document.getElementById('accountRow');
-    if(!cloudMode || !cloudUser){ row.hidden = true; return; }
-    row.hidden = false;
-    document.getElementById('accountAvatar').src = cloudUser.photoURL || '';
-    document.getElementById('accountName').textContent = cloudUser.displayName || cloudUser.email || 'Conta';
-  }
-  function scheduleCloudSave(){
-    if(!cloudMode || !cloudUser || !cloudData) return;
-    if(cloudSaveTimer) clearTimeout(cloudSaveTimer);
-    cloudSaveTimer = setTimeout(function(){
-      firebase.firestore().collection(FIRESTORE_COLLECTION).doc(cloudUser.uid).set(cloudData).catch(function(err){
-        console.error('Falha ao sincronizar com a nuvem:', err);
-      });
-    }, 700);
-  }
-  function cloudSignIn(){
-    var provider = new firebase.auth.GoogleAuthProvider();
-    firebase.auth().signInWithPopup(provider).catch(function(err){
-      showAuthOverlay('Não foi possível entrar: ' + err.message);
-    });
-  }
-  function cloudSignOut(){
-    firebase.auth().signOut();
-  }
-  function bootCloud(){
-    try{
-      firebase.initializeApp(FIREBASE_CONFIG);
-    }catch(e){ render(); return; }
-    cloudMode = true;
-    document.getElementById('googleSignInBtn').onclick = cloudSignIn;
-    document.getElementById('accountSignOut').onclick = cloudSignOut;
-    firebase.auth().onAuthStateChanged(function(user){
-      cloudUser = user;
-      if(user){
-        firebase.firestore().collection(FIRESTORE_COLLECTION).doc(user.uid).get().then(function(snap){
-          cloudData = snap.exists ? (snap.data() || {}) : {};
-          hideAuthOverlay();
-          render();
-        }).catch(function(err){
-          cloudData = {};
-          hideAuthOverlay();
-          render();
-          console.error('Falha ao carregar dados da nuvem:', err);
-        });
-      } else {
-        cloudData = null;
-        showAuthOverlay('');
-      }
-    });
-  }
-
-  function loadData(){
-    if(cloudMode) return cloudData || {};
-    try{
-      var stored = localStorage.getItem(STORAGE_KEY);
-      return stored ? JSON.parse(stored) : {};
-    }catch(e){ return {}; }
-  }
-  function saveData(data){
-    if(cloudMode){
-      cloudData = data;
-      scheduleCloudSave();
-      return;
-    }
-    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }catch(e){}
-  }
-  function loadPage(){
-    try{ return localStorage.getItem(PAGE_KEY) || 'overview'; }catch(e){ return 'overview'; }
-  }
-  function savePage(p){
-    try{ localStorage.setItem(PAGE_KEY, p); }catch(e){}
-  }
-
-  function isoDate(d){ return d.toISOString().split('T')[0]; }
-  function addDays(d, n){ var nd = new Date(d); nd.setDate(nd.getDate() + n); return nd; }
-  function todayIndexMon(){ return (new Date().getDay() + 6) % 7; }
-  function pad2(n){ return n < 10 ? '0' + n : '' + n; }
-
-  function getWeekKey(d){
-    var today = d || new Date();
-    var day = today.getDay();
-    var diffToMonday = (day === 0) ? -6 : (1 - day);
-    var start = new Date(today);
-    start.setDate(today.getDate() + diffToMonday);
-    return start.toISOString().split('T')[0];
-  }
-  function formatWeekLabel(iso){
-    var parts = iso.split('-');
-    return parts[2] + '/' + parts[1];
-  }
-  function formatToday(){
-    var d = new Date();
-    return d.toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long' });
-  }
-  function fmtMoney(n){ return n.toLocaleString('pt-BR'); }
-  function monthFullName(k){
-    return { jun:'junho', jul:'julho', ago:'agosto', set:'setembro' }[k] || k;
-  }
-  function capitalize(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
-  function escapeHtml(str){
-    var div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
-  }
-  function getCssVar(name){
-    return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '#6b7280';
-  }
-  function calcStreak(markedDates){
-    var set = {};
-    markedDates.forEach(function(d){ set[d] = true; });
-    var cursor = new Date();
-    if(!set[isoDate(cursor)]){
-      cursor = addDays(cursor, -1);
-      if(!set[isoDate(cursor)]) return 0;
-    }
-    var count = 0;
-    while(set[isoDate(cursor)]){ count++; cursor = addDays(cursor, -1); }
-    return count;
-  }
-  function pillarEyebrow(pillarId){
-    var idx = PILLARS.findIndex(function(p){ return p.id === pillarId; });
-    var p = PILLARS[idx];
-    return 'PILAR ' + pad2(idx + 1) + ' · ' + p.name.toUpperCase();
-  }
-  function pageHeaderHtml(pillar, title, subtitle){
-    return '<button class="back-link" id="backBtn">&larr; Visão geral</button>' +
-      '<div class="eyebrow" style="color:' + pillar.accent + '">' + pillarEyebrow(pillar.id) + '</div>' +
-      '<div class="page-head"><div><h1>' + title + '</h1>' +
-      '<div class="page-sub">' + subtitle + '</div></div></div>';
-  }
-
-  /* ---------- Saúde & Corpo ---------- */
-  function seedSaude(data){
-    var wk = getWeekKey();
-    data.saude = { weeks:{}, dogWalks:[], records:[
-      { id:'r1', text:'Agachamento: 60kg' },
-      { id:'r2', text:'5km em 28min' }
-    ] };
-    data.saude.weeks[wk] = { days:{ seg:true, ter:true, qua:true, qui:true, sex:true, sab:false, dom:false }, meta:5 };
-    var counts = [3,4,3,2,5];
-    for(var i=5;i>=1;i--){
-      var past = addDays(new Date(), -7*i);
-      var pk = getWeekKey(past);
-      var c = counts[5-i];
-      var days = { seg:false, ter:false, qua:false, qui:false, sex:false, sab:false, dom:false };
-      var keys = Object.keys(days);
-      for(var j=0;j<c;j++) days[keys[j]] = true;
-      data.saude.weeks[pk] = { days:days, meta:5 };
-    }
-    var walks = [];
-    for(var k=22;k>=0;k--){ walks.push(isoDate(addDays(new Date(), -k))); }
-    data.saude.dogWalks = walks;
-  }
-  function blankSaudeDays(){ return { seg:false, ter:false, qua:false, qui:false, sex:false, sab:false, dom:false }; }
-  function ensureSaude(data){
-    if(!data.saude || typeof data.saude !== 'object') seedSaude(data);
-    if(!Array.isArray(data.saude.records)) data.saude.records = [];
-    if(!Array.isArray(data.saude.dogWalks)) data.saude.dogWalks = [];
-    if(!data.saude.weeks || typeof data.saude.weeks !== 'object') data.saude.weeks = {};
-    var wk = getWeekKey();
-    if(!data.saude.weeks[wk] || !data.saude.weeks[wk].days){
-      data.saude.weeks[wk] = { days: blankSaudeDays(), meta:5 };
-    }
-    return data.saude;
-  }
-
-  function saudeDaysCount(wd){
-    if(!wd || !wd.days) return 0;
-    return WEEKDAYS.filter(function(d){ return wd.days[d.key]; }).length;
-  }
-
-  function renderSaudePage(){
-    var pillar = PILLARS.find(function(p){ return p.id === 'saude'; });
-    var data = loadData();
-    ensureSaude(data);
-    saveData(data);
-    var wk = getWeekKey();
-    var weekDoc = data.saude.weeks[wk];
-    var meta = weekDoc.meta;
-    var daysOn = saudeDaysCount(weekDoc);
-
-    /* Only weeks written by this schema (they carry .days) count toward the history and the record. */
-    var weekKeys = Object.keys(data.saude.weeks).filter(function(k){ return data.saude.weeks[k] && data.saude.weeks[k].days; }).sort();
-    var last6 = weekKeys.slice(-6);
-    var histLabels = last6.map(function(k){ return formatWeekLabel(k); });
-    var histValues = last6.map(function(k){ return saudeDaysCount(data.saude.weeks[k]); });
-    var recordWeek = weekKeys.reduce(function(max,k){
-      return Math.max(max, saudeDaysCount(data.saude.weeks[k]));
-    }, 0);
-
-    var dogStreak = calcStreak(data.saude.dogWalks);
-    var todayIso = isoDate(new Date());
-    var walkedToday = data.saude.dogWalks.indexOf(todayIso) >= 0;
-
-    var main = document.getElementById('main');
-    main.innerHTML = pageHeaderHtml(pillar, 'Treino e movimento', 'Marca os dias em que treinou essa semana — a meta e a sequência se atualizam sozinhas.') +
-      '<div class="pillar-body" style="--accent:' + pillar.accent + '">' +
-        '<div class="detail-grid">' +
-          '<div class="card">' +
-            '<div class="card-title">Treinos essa semana</div>' +
-            '<div class="page-sub" style="margin-top:-8px;margin-bottom:12px;">Seg a dom · toca pra marcar</div>' +
-            '<div class="day-toggle-row" id="dayToggleRow"></div>' +
-            '<div class="meta-row"><span>Meta da semana</span><strong>' + daysOn + ' / ' + meta + '</strong></div>' +
-            '<div class="mini-bar"><div class="mini-bar-fill" style="width:' + Math.min(100, Math.round(daysOn/meta*100)) + '%"></div></div>' +
-          '</div>' +
-          '<div class="card">' +
-            '<div class="chart-card-head"><span>Últimas 6 semanas</span><span>meta ' + meta + ' treinos/semana</span></div>' +
-            '<div class="page-sub" style="margin:2px 0 8px;">Treinos concluídos por semana</div>' +
-            '<div class="chart-wrap" style="height:168px;"><canvas id="saudeChart"></canvas></div>' +
-          '</div>' +
-        '</div>' +
-        '<div class="stat-duo" style="margin-top:1.1rem;">' +
-          '<div class="card stat-number-card clickable" id="dogWalkCard">' +
-            '<div class="card-title">Passeio com a cachorra</div>' +
-            '<div class="stat-number">' + dogStreak + '</div>' +
-            '<div class="stat-number-label">dias seguidos · ' + (walkedToday ? 'já passeou hoje ✓' : 'toca pra marcar hoje') + '</div>' +
-          '</div>' +
-          '<div class="card stat-number-card">' +
-            '<div class="card-title">Recorde de treinos numa semana</div>' +
-            '<div class="stat-number">' + recordWeek + '</div>' +
-            '<div class="stat-number-label">treinos</div>' +
-          '</div>' +
-        '</div>' +
-        '<div class="card" style="margin-top:1.1rem;">' +
-          '<div class="card-title">Recordes pessoais</div>' +
-          '<div class="page-sub" style="margin-top:-8px;margin-bottom:12px;">Registre um PR pra acompanhar sua evolução</div>' +
-          '<div class="record-add"><input type="text" class="text-input" id="recordInput" placeholder="ex: agachamento 60kg, 5km em 28min..."><button id="recordAddBtn">Adicionar</button></div>' +
-          '<div class="record-list" id="recordList"></div>' +
-        '</div>' +
-      '</div>';
-
-    document.getElementById('backBtn').onclick = function(){ navigate('overview'); };
-
-    var dayRow = document.getElementById('dayToggleRow');
-    WEEKDAYS.forEach(function(d, idx){
-      var btn = document.createElement('button');
-      btn.className = 'day-toggle' + (weekDoc.days[d.key] ? ' on' : '') + (idx === todayIndexMon() ? ' today' : '');
-      btn.innerHTML = '<span class="dow">' + d.label + '</span>';
-      btn.onclick = function(){
-        var dd = loadData(); ensureSaude(dd);
-        var wdoc = dd.saude.weeks[getWeekKey()];
-        wdoc.days[d.key] = !wdoc.days[d.key];
-        saveData(dd);
-        renderSaudePage();
-      };
-      dayRow.appendChild(btn);
-    });
-
-    document.getElementById('dogWalkCard').onclick = function(){
-      var dd = loadData(); ensureSaude(dd);
-      var iso = isoDate(new Date());
-      var idx = dd.saude.dogWalks.indexOf(iso);
-      if(idx >= 0) dd.saude.dogWalks.splice(idx, 1); else dd.saude.dogWalks.push(iso);
-      saveData(dd);
-      renderSaudePage();
-    };
-
-    var list = document.getElementById('recordList');
-    data.saude.records.forEach(function(r){
-      var row = document.createElement('div');
-      row.className = 'record-item';
-      var span = document.createElement('span');
-      span.textContent = r.text;
-      var btn = document.createElement('button');
-      btn.innerHTML = '&times;';
-      btn.setAttribute('aria-label', 'Remover');
-      btn.onclick = function(){
-        var dd = loadData(); ensureSaude(dd);
-        dd.saude.records = dd.saude.records.filter(function(x){ return x.id !== r.id; });
-        saveData(dd);
-        renderSaudePage();
-      };
-      row.appendChild(span); row.appendChild(btn);
-      list.appendChild(row);
-    });
-
-    function addSaudeRecord(){
-      var input = document.getElementById('recordInput');
-      var val = input.value.trim();
-      if(!val) return;
-      var dd = loadData(); ensureSaude(dd);
-      dd.saude.records.push({ id:'r' + Date.now(), text: val });
-      saveData(dd);
-      renderSaudePage();
-    }
-    document.getElementById('recordAddBtn').onclick = addSaudeRecord;
-    document.getElementById('recordInput').addEventListener('keydown', function(e){ if(e.key === 'Enter') addSaudeRecord(); });
-
-    setTimeout(function(){
-      var ctx = document.getElementById('saudeChart');
-      if(!ctx) return;
-      new Chart(ctx, {
-        data:{ labels: histLabels, datasets:[
-          { type:'bar', label:'Treinos', data: histValues, backgroundColor: pillar.accent, borderRadius:6, maxBarThickness:30 },
-          { type:'line', label:'Meta', data: histLabels.map(function(){ return meta; }), borderColor: getCssVar('--text-2'), borderDash:[5,5], pointRadius:0, borderWidth:1.5 }
-        ]},
-        options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } },
-          scales:{ y:{ beginAtZero:true, max:7, ticks:{ stepSize:1, color:getCssVar('--text-2') }, grid:{ color:getCssVar('--border') } },
-                   x:{ ticks:{ color:getCssVar('--text-2') }, grid:{ display:false } } } }
-      });
-    }, 50);
-  }
-
-  /* ---------- Sono & Descanso ---------- */
-  function seedSonoWeek(){
-    return { hours:{ seg:7, ter:6.5, qua:7, qui:7, sex:6.5, sab:8.5, dom:7 }, energy:3, rituals:{ tela:true, diario:false, cafeina:true } };
-  }
-  function ensureSono(data){
-    if(!data.sono || typeof data.sono !== 'object') data.sono = {};
-    if(!data.sono.weeks || typeof data.sono.weeks !== 'object') data.sono.weeks = {};
-    var wk = getWeekKey();
-    if(!data.sono.weeks[wk] || !data.sono.weeks[wk].hours) data.sono.weeks[wk] = seedSonoWeek();
-    return data.sono;
-  }
-
-  var GARMIN_URL = 'https://garmin-sono.ericchang12c.workers.dev';
-  var garminState = { last:0, busy:false, msg:'' };
-
-  function localIso(d){ return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate()); }
-  function fmtH(h){ return h == null ? '–' : (Math.floor(h) + 'h' + pad2(Math.round((h % 1) * 60)) ); }
-  function fmtClock(ms){
-    if(!ms) return '–';
-    var d = new Date(ms); // timestamp "local" do Garmin: ler em UTC dá a hora de parede
-    return pad2(d.getUTCHours()) + ':' + pad2(d.getUTCMinutes());
-  }
-
-  /* Busca as noites da semana no Garmin (via Worker) e grava em data.sono.weeks[wk].
-     Só roda logado (o Worker confere o token do Firebase) e no máximo a cada 10 min,
-     a não ser que force = true (botão Atualizar). */
-  function syncGarmin(force){
-    if(garminState.busy) return;
-    if(!cloudMode || !cloudUser){ garminState.msg = 'Entre com o Google para sincronizar com o Garmin.'; return; }
-    if(!force && Date.now() - garminState.last < 10*60e3) return;
-    garminState.busy = true; garminState.last = Date.now(); garminState.msg = 'Sincronizando com o Garmin…';
-    var wk = getWeekKey();
-    var monday = new Date(wk + 'T12:00:00');
-    var sunday = addDays(monday, 6);
-    var todayIso = localIso(new Date());
-    var to = localIso(sunday) < todayIso ? localIso(sunday) : todayIso;
-    cloudUser.getIdToken().then(function(tok){
-      return fetch(GARMIN_URL + '/sono?from=' + wk + '&to=' + to, { headers:{ Authorization:'Bearer ' + tok } });
-    }).then(function(r){
-      return r.json().then(function(j){ if(!r.ok) throw new Error(j.erro || r.status); return j; });
-    }).then(function(j){
-      var dd = loadData(); ensureSono(dd);
-      var wdoc = dd.sono.weeks[wk];
-      wdoc.garmin = wdoc.garmin || {};
-      (j.noites || []).forEach(function(n){
-        var idx = Math.round((new Date(n.data + 'T12:00:00') - monday) / 864e5);
-        if(idx < 0 || idx > 6) return;
-        var key = WEEKDAYS[idx].key;
-        wdoc.garmin[key] = n;
-        if(n.horas != null) wdoc.hours[key] = n.horas;
-      });
-      wdoc.garminSync = Date.now();
-      saveData(dd);
-      garminState.msg = (j.noites || []).length ? '' : 'O Garmin ainda não tem noites registradas nesta semana.';
-    }).catch(function(e){
-      garminState.msg = 'Não consegui falar com o Garmin (' + e.message + ').';
-    }).then(function(){
-      garminState.busy = false;
-      if(loadPage() === 'sono') renderSonoPage();
-    });
-  }
-
-  function garminCardHtml(wd, todayKey){
-    var g = wd.garmin || {};
-    var key = g[todayKey] ? todayKey : WEEKDAYS.map(function(d){ return d.key; }).filter(function(k){ return g[k]; }).pop();
-    var status = garminState.busy ? 'Sincronizando…' :
-      (garminState.msg || (wd.garminSync ? 'Sincronizado às ' + pad2(new Date(wd.garminSync).getHours()) + ':' + pad2(new Date(wd.garminSync).getMinutes()) : ''));
-    var btn = '<button class="ritual-btn" id="garminRefresh"' + (garminState.busy ? ' disabled' : '') + '>atualizar</button>';
-    var head = '<div class="chart-card-head"><span>Sua noite · Garmin</span>' + btn + '</div>' +
-               '<div class="page-sub" style="margin:2px 0 8px;">' + escapeHtml(status) + '</div>';
-    if(!key) return '<div class="card" style="margin-top:1.1rem;">' + head + '</div>';
-    var n = g[key];
-    var total = (n.profundo||0) + (n.leve||0) + (n.rem||0) + (n.acordado||0) || 1;
-    var fases = [
-      { nome:'Profundo', v:n.profundo, cor:'#6c5ce7' },
-      { nome:'Leve',     v:n.leve,     cor:'#a99cf5' },
-      { nome:'REM',      v:n.rem,      cor:'#f4b184' },
-      { nome:'Acordado', v:n.acordado, cor:'#d8d4e8' }
-    ];
-    var barra = '<div style="display:flex;height:14px;border-radius:7px;overflow:hidden;margin:10px 0 8px;">' +
-      fases.map(function(f){ return '<div style="width:' + ((f.v||0)/total*100) + '%;background:' + f.cor + '"></div>'; }).join('') + '</div>';
-    var legenda = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;font-size:13px;font-weight:600;">' +
-      fases.map(function(f){ return '<span><i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:' + f.cor + ';margin-right:6px"></i>' + f.nome + ' ' + fmtH(f.v) + '</span>'; }).join('') + '</div>';
-    var extra = [];
-    if(n.dormiu) extra.push('Dormiu ' + fmtClock(n.dormiu) + ' · acordou ' + fmtClock(n.acordou));
-    if(n.fc) extra.push('FC repouso ' + n.fc + ' bpm');
-    if(n.hrv) extra.push('HRV ' + n.hrv + ' ms');
-    return '<div class="card" style="margin-top:1.1rem;">' + head +
-      '<div style="display:flex;gap:22px;align-items:baseline;">' +
-        '<div><div class="stat-number">' + fmtH(n.horas) + '</div><div class="stat-number-label">' + (key === todayKey ? 'essa noite' : 'noite de ' + key) + '</div></div>' +
-        '<div><div class="stat-number">' + (n.score != null ? n.score : '–') + '</div><div class="stat-number-label">score de sono</div></div>' +
-      '</div>' + barra + legenda +
-      (extra.length ? '<div class="page-sub" style="margin-top:10px;">' + extra.join(' · ') + '</div>' : '') +
-    '</div>';
-  }
-
-  function renderSonoPage(){
-    var pillar = PILLARS.find(function(p){ return p.id === 'sono'; });
-    var data = loadData();
-    ensureSono(data);
-    saveData(data);
-    var wk = getWeekKey();
-    var wd = data.sono.weeks[wk];
-    var meta = 8;
-    var todayKey = WEEKDAYS[todayIndexMon()].key;
-    var hoursArr = WEEKDAYS.map(function(d){ return wd.hours[d.key]; });
-    var avg = hoursArr.reduce(function(s,v){ return s+v; },0) / hoursArr.length;
-    var nights7 = hoursArr.filter(function(v){ return v >= 7; }).length;
-
-    var rituals = [
-      { id:'tela', name:'Sem tela 30 min antes de dormir' },
-      { id:'diario', name:'Diário antes de dormir' },
-      { id:'cafeina', name:'Sem cafeína depois das 17h' }
-    ];
-
-    var main = document.getElementById('main');
-    main.innerHTML = pageHeaderHtml(pillar, 'Quanto você tá descansando', 'Horas de sono por noite e os rituais que ajudam a dormir melhor.') +
-      '<div class="pillar-body" style="--accent:' + pillar.accent + '">' +
-        '<div class="card">' +
-          '<div class="chart-card-head"><span>Horas de sono</span><span>média: ' + avg.toFixed(1) + 'h</span></div>' +
-          '<div class="page-sub" style="margin:2px 0 8px;">Seg a dom · meta ' + meta + 'h</div>' +
-          '<div class="chart-wrap" style="height:168px;"><canvas id="sonoChart"></canvas></div>' +
-          (wd.garmin && wd.garmin[todayKey] ? '' :
-          '<div class="stepper-row" style="margin-top:14px;">' +
-            '<span class="field-label" style="margin:0;">Hoje</span>' +
-            '<button class="stepper-btn" id="hoursMinus">&minus;</button>' +
-            '<span class="stepper-value" id="hoursValue">' + wd.hours[todayKey] + 'h</span>' +
-            '<button class="stepper-btn" id="hoursPlus">+</button>' +
-          '</div>') +
-          '<div class="field-label" style="margin-top:16px;">Energia ao acordar hoje</div>' +
-          '<div class="rating-dots" id="energyDots" style="--dotcolor:' + pillar.accent + '"></div>' +
-        '</div>' +
-        garminCardHtml(wd, todayKey) +
-        '<div class="stat-duo" style="margin-top:1.1rem;">' +
-          '<div class="card stat-number-card">' +
-            '<div class="card-title">Média da semana</div>' +
-            '<div class="stat-number">' + avg.toFixed(1) + 'h</div>' +
-            '<div class="stat-number-label">por noite</div>' +
-          '</div>' +
-          '<div class="card stat-number-card">' +
-            '<div class="card-title">Noites com 7h ou mais</div>' +
-            '<div class="stat-number">' + nights7 + '</div>' +
-            '<div class="stat-number-label">essa semana</div>' +
-          '</div>' +
-        '</div>' +
-        '<div class="card" style="margin-top:1.1rem;">' +
-          '<div class="card-title">Rituais pra dormir melhor</div>' +
-          '<div class="page-sub" style="margin-top:-8px;margin-bottom:8px;">Toca pra marcar o que você fez hoje</div>' +
-          '<div id="ritualList"></div>' +
-        '</div>' +
-      '</div>';
-
-    document.getElementById('backBtn').onclick = function(){ navigate('overview'); };
-
-    function adjustHours(delta){
-      var dd = loadData(); ensureSono(dd);
-      var wdoc = dd.sono.weeks[getWeekKey()];
-      wdoc.hours[todayKey] = Math.max(0, Math.min(12, Math.round((wdoc.hours[todayKey] + delta) * 2) / 2));
-      saveData(dd);
-      renderSonoPage();
-    }
-    var hm = document.getElementById('hoursMinus'), hp = document.getElementById('hoursPlus');
-    if(hm) hm.onclick = function(){ adjustHours(-0.5); };
-    if(hp) hp.onclick = function(){ adjustHours(0.5); };
-    var gr = document.getElementById('garminRefresh');
-    if(gr) gr.onclick = function(){ syncGarmin(true); renderSonoPage(); };
-    syncGarmin(false);
-
-    var energyDots = document.getElementById('energyDots');
-    for(var i=1;i<=5;i++){
-      (function(val){
-        var dot = document.createElement('button');
-        dot.className = 'rating-dot' + (val <= wd.energy ? ' filled' : '');
-        dot.setAttribute('aria-label', 'Energia ' + val);
-        dot.onclick = function(){
-          var dd = loadData(); ensureSono(dd);
-          dd.sono.weeks[getWeekKey()].energy = val;
-          saveData(dd);
-          renderSonoPage();
-        };
-        energyDots.appendChild(dot);
-      })(i);
-    }
-
-    var ritualList = document.getElementById('ritualList');
-    rituals.forEach(function(r){
-      var done = !!wd.rituals[r.id];
-      var row = document.createElement('div');
-      row.className = 'ritual-row';
-      var name = document.createElement('span');
-      name.className = 'ritual-name';
-      name.textContent = r.name;
-      var btn = document.createElement('button');
-      btn.className = 'ritual-btn' + (done ? ' done' : '');
-      btn.textContent = done ? 'feito' : 'marcar';
-      btn.onclick = function(){
-        var dd = loadData(); ensureSono(dd);
-        var wdoc = dd.sono.weeks[getWeekKey()];
-        wdoc.rituals[r.id] = !wdoc.rituals[r.id];
-        saveData(dd);
-        renderSonoPage();
-      };
-      row.appendChild(name); row.appendChild(btn);
-      ritualList.appendChild(row);
-    });
-
-    setTimeout(function(){
-      var ctx = document.getElementById('sonoChart');
-      if(!ctx) return;
-      new Chart(ctx, {
-        data:{ labels: WEEKDAYS.map(function(d){ return d.label; }), datasets:[
-          { type:'bar', label:'Horas', data: hoursArr, backgroundColor: pillar.accent, borderRadius:6, maxBarThickness:32 },
-          { type:'line', label:'Meta', data: WEEKDAYS.map(function(){ return meta; }), borderColor: getCssVar('--text-2'), borderDash:[5,5], pointRadius:0, borderWidth:1.5 }
-        ]},
-        options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } },
-          scales:{ y:{ beginAtZero:true, max:10, ticks:{ color:getCssVar('--text-2') }, grid:{ color:getCssVar('--border') } },
-                   x:{ ticks:{ color:getCssVar('--text-2') }, grid:{ display:false } } } }
-      });
-    }, 50);
-  }
-
-  /* ---------- Estudo (Leitura) ---------- */
-  function seedLeitura(data){
-    var vals = [8,14,10,16,9,11,13,9,11,13,12,17,16,24];
-    var pages = {};
-    for(var i=0;i<14;i++){ pages[isoDate(addDays(new Date(), -(13-i)))] = vals[i]; }
-    data.leitura = {
-      dailyPages: pages,
-      books: [
-        { id:'b1', title:'Essencialismo', author:'Greg McKeown', totalPages:260, pagesRead:210 },
-        { id:'b2', title:'O Poder do Hábito', author:'Charles Duhigg', totalPages:320, pagesRead:80 }
-      ]
-    };
-  }
-  function ensureLeitura(data){
-    if(!data.leitura || typeof data.leitura !== 'object' || !data.leitura.dailyPages || !Array.isArray(data.leitura.books)) seedLeitura(data);
-    return data.leitura;
-  }
-
-  function renderLeituraPage(){
-    var pillar = PILLARS.find(function(p){ return p.id === 'leitura'; });
-    var data = loadData();
-    ensureLeitura(data);
-    saveData(data);
-    var meta = 15;
-    var today = new Date();
-    var todayIso = isoDate(today);
-
-    var last7 = []; for(var i=6;i>=0;i--) last7.push(addDays(today, -i));
-    var streak = calcStreak(Object.keys(data.leitura.dailyPages).filter(function(k){ return data.leitura.dailyPages[k] >= meta; }));
-
-    var last14 = []; for(var j=13;j>=0;j--) last14.push(addDays(today, -j));
-    var chartLabels = last14.map(function(d){ return pad2(d.getDate()) + '/' + pad2(d.getMonth()+1); });
-    var chartValues = last14.map(function(d){ return data.leitura.dailyPages[isoDate(d)] || 0; });
-    var todayPages = data.leitura.dailyPages[todayIso] || 0;
-    var nonzero = chartValues.filter(function(v){ return v > 0; });
-    var avgPace = nonzero.length ? Math.round(nonzero.reduce(function(s,v){ return s+v; },0) / nonzero.length) : meta;
-
-    var main = document.getElementById('main');
-    main.innerHTML = pageHeaderHtml(pillar, 'Leitura e aprendizados', 'A meta de 15 páginas por dia e os livros que você está lendo agora.') +
-      '<div class="pillar-body" style="--accent:' + pillar.accent + '">' +
-        '<div class="detail-grid">' +
-          '<div class="card">' +
-            '<div class="card-title">15 páginas por dia</div>' +
-            '<div class="page-sub" style="margin-top:-8px;margin-bottom:12px;">Últimos 7 dias · toca pra marcar</div>' +
-            '<div class="day-toggle-row" id="readToggleRow"></div>' +
-            '<div class="meta-row"><span>Sequência atual</span><strong>' + streak + ' dia' + (streak===1?'':'s') + '</strong></div>' +
-            '<div class="mini-bar"><div class="mini-bar-fill" style="width:' + Math.min(100, Math.round(streak/7*100)) + '%"></div></div>' +
-            '<div class="field-label" style="margin-top:16px;">Páginas de hoje (ajuste fino, opcional)</div>' +
-            '<input type="number" min="0" class="text-input" id="todayPagesInput" value="' + todayPages + '">' +
-          '</div>' +
-          '<div class="card">' +
-            '<div class="chart-card-head"><span>Páginas lidas · últimos 14 dias</span><span>meta ' + meta + ' páginas/dia</span></div>' +
-            '<div class="page-sub" style="margin:2px 0 8px;">Linha pontilhada = meta diária · hoje: ' + todayPages + '</div>' +
-            '<div class="chart-wrap" style="height:168px;"><canvas id="leituraChart"></canvas></div>' +
-          '</div>' +
-        '</div>' +
-        '<div class="card" style="margin-top:1.1rem;">' +
-          '<div class="card-title">Livros sendo lidos</div>' +
-          '<div class="page-sub" style="margin-top:-8px;margin-bottom:14px;">Toca em "+10 páginas" conforme for avançando</div>' +
-          '<div id="bookList"></div>' +
-        '</div>' +
-      '</div>';
-
-    document.getElementById('backBtn').onclick = function(){ navigate('overview'); };
-
-    var row = document.getElementById('readToggleRow');
-    last7.forEach(function(d, idx){
-      var iso = isoDate(d);
-      var on = (data.leitura.dailyPages[iso] || 0) >= meta;
-      var isToday = iso === todayIso;
-      var label = isToday ? 'HOJE' : ('D-' + (6-idx));
-      var btn = document.createElement('button');
-      btn.className = 'day-toggle' + (on ? ' on' : '') + (isToday ? ' today' : '');
-      btn.innerHTML = '<span class="dow">' + label + '</span>';
-      btn.onclick = function(){
-        var dd = loadData(); ensureLeitura(dd);
-        var cur = dd.leitura.dailyPages[iso] || 0;
-        dd.leitura.dailyPages[iso] = cur >= meta ? 0 : meta;
-        saveData(dd);
-        renderLeituraPage();
-      };
-      row.appendChild(btn);
-    });
-
-    document.getElementById('todayPagesInput').addEventListener('change', function(e){
-      var v = Math.max(0, parseInt(e.target.value, 10) || 0);
-      var dd = loadData(); ensureLeitura(dd);
-      dd.leitura.dailyPages[todayIso] = v;
-      saveData(dd);
-      renderLeituraPage();
-    });
-
-    var bookList = document.getElementById('bookList');
-    data.leitura.books.forEach(function(b){
-      var pct = Math.min(100, Math.round(b.pagesRead / b.totalPages * 100));
-      var remaining = Math.max(0, b.totalPages - b.pagesRead);
-      var days = remaining <= 0 ? 0 : Math.max(1, Math.ceil(remaining / avgPace));
-      var item = document.createElement('div');
-      item.className = 'book-item';
-      item.innerHTML =
-        '<div class="book-top"><div><div class="book-title">' + escapeHtml(b.title) + '</div><div class="book-author">' + escapeHtml(b.author) + '</div></div><div class="book-pct">' + pct + '%</div></div>' +
-        '<div class="book-track-row"><div class="mini-bar"><div class="mini-bar-fill" style="width:' + pct + '%"></div></div><button class="boost-btn">+10 páginas</button></div>' +
-        '<div class="book-meta">' + (remaining > 0 ? ('faltam ' + remaining + ' páginas · ~' + days + ' dia' + (days===1?'':'s') + ' no ritmo atual') : 'concluído! 🎉') + '</div>';
-      item.querySelector('.boost-btn').onclick = function(){
-        var dd = loadData(); ensureLeitura(dd);
-        var book = dd.leitura.books.find(function(x){ return x.id === b.id; });
-        book.pagesRead = Math.min(book.totalPages, book.pagesRead + 10);
-        saveData(dd);
-        renderLeituraPage();
-      };
-      bookList.appendChild(item);
-    });
-
-    setTimeout(function(){
-      var ctx = document.getElementById('leituraChart');
-      if(!ctx) return;
-      new Chart(ctx, {
-        data:{ labels: chartLabels, datasets:[
-          { type:'bar', label:'Páginas', data: chartValues, backgroundColor: pillar.accent, borderRadius:5, maxBarThickness:18 },
-          { type:'line', label:'Meta', data: chartLabels.map(function(){ return meta; }), borderColor: getCssVar('--text-2'), borderDash:[5,5], pointRadius:0, borderWidth:1.5 }
-        ]},
-        options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } },
-          scales:{ y:{ beginAtZero:true, ticks:{ color:getCssVar('--text-2') }, grid:{ color:getCssVar('--border') } },
-                   x:{ ticks:{ color:getCssVar('--text-2'), maxRotation:0, autoSkip:true, font:{ size:9 } }, grid:{ display:false } } } }
-      });
-    }, 50);
-  }
-
-  /* ---------- Finanças ---------- */
-  function seedFinancas(data){
-    data.financas = {
-      goals: [
-        { id:'reserva', name:'Reserva de emergência', progress:62 },
-        { id:'viagem', name:'Viagem (Portugal, 2027)', progress:38 },
-        { id:'aporte', name:'Aporte mensal em investimentos', progress:80 }
-      ],
-      invoice: { selectedMonth:'set', months:{ jun:{ fileName:null }, jul:{ fileName:null }, ago:{ fileName:null }, set:{ fileName:null } } }
-    };
-  }
-  function ensureFinancas(data){
-    if(!data.financas || typeof data.financas !== 'object' || !Array.isArray(data.financas.goals) || !data.financas.invoice) seedFinancas(data);
-    return data.financas;
-  }
-
-  function renderFinancasPage(){
-    var pillar = PILLARS.find(function(p){ return p.id === 'financas'; });
-    var data = loadData();
-    ensureFinancas(data);
-    saveData(data);
-    var fin = data.financas;
-    var months = [{ k:'jun', l:'Jun' }, { k:'jul', l:'Jul' }, { k:'ago', l:'Ago' }, { k:'set', l:'Set' }];
-    var sel = fin.invoice.selectedMonth;
-    var selDoc = fin.invoice.months[sel];
-
-    var categories = [
-      { name:'Alimentação', value:1350 },
-      { name:'Transporte', value:680 },
-      { name:'Lazer', value:540 },
-      { name:'Assinaturas e cursos', value:380 }
-    ];
-    var maxCat = Math.max.apply(null, categories.map(function(c){ return c.value; }));
-    var receita = 8400, despesas = 3850, saldo = receita - despesas;
-
-    var main = document.getElementById('main');
-    main.innerHTML = pageHeaderHtml(pillar, 'Fatura, gastos e metas de longo prazo', 'Números de exemplo, só pra ilustrar como a aba funciona — troca pelos seus valores quando for usar de verdade.') +
-      '<div class="pillar-body" style="--accent:' + pillar.accent + '">' +
-        '<button type="button" class="card cf-cta" id="goRaioX">' +
-          '<span class="cf-cta-ico">🔎</span>' +
-          '<span class="cf-cta-txt"><b>Veja o seu gasto de verdade</b><small>Raio-X do Meu Cofrin: para onde vai cada R$ 100, o que mudou no mês e quanto você economiza cortando</small></span>' +
-          '<span class="cf-cta-go">›</span>' +
-        '</button>' +
-        '<div class="detail-grid">' +
-          '<div class="card">' +
-            '<div class="card-title">Fatura do mês</div>' +
-            '<div class="page-sub" style="margin-top:-8px;margin-bottom:12px;">Sobe o PDF ou print da fatura de ' + monthFullName(sel) + '</div>' +
-            '<div class="upload-zone' + (selDoc.fileName ? ' has-file' : '') + '" id="uploadZone">' + (selDoc.fileName ? ('📎 ' + escapeHtml(selDoc.fileName)) : 'Arraste o arquivo aqui ou toque pra selecionar') + '</div>' +
-            '<input type="file" id="fileInput" style="display:none" accept="application/pdf,image/*">' +
-            '<div class="month-tabs" id="monthTabs"></div>' +
-          '</div>' +
-          '<div class="card">' +
-            '<div class="card-title">Receita x despesas</div>' +
-            '<div class="page-sub" style="margin-top:-8px;">' + capitalize(monthFullName(sel)) + ' (exemplo)</div>' +
-            '<div class="kv-duo">' +
-              '<div class="kv-item"><div class="kv-label">Receita</div><div class="kv-value">R$ ' + fmtMoney(receita) + '<span class="kv-delta up">↑8%</span></div></div>' +
-              '<div class="kv-item"><div class="kv-label">Despesas</div><div class="kv-value">R$ ' + fmtMoney(despesas) + '<span class="kv-delta down">↑4%</span></div></div>' +
-            '</div>' +
-            '<div class="meta-row" style="margin-top:16px;"><span>Saldo do mês</span><strong style="color:var(--data)">R$ ' + fmtMoney(saldo) + '</strong></div>' +
-          '</div>' +
-        '</div>' +
-        '<div class="card" style="margin-top:1.1rem;">' +
-          '<div class="card-title">Gastos por categoria</div>' +
-          '<div class="page-sub" style="margin-top:-8px;margin-bottom:10px;">' + capitalize(monthFullName(sel)) + ' (exemplo) · ordenado do maior pro menor</div>' +
-          '<div class="cat-bar-list">' + categories.map(function(c){
-            return '<div class="cat-bar-row"><div class="cat-bar-top"><span>' + c.name + '</span><span>R$ ' + fmtMoney(c.value) + '</span></div><div class="cat-bar-track"><div class="cat-bar-fill" style="width:' + Math.round(c.value/maxCat*100) + '%"></div></div></div>';
-          }).join('') + '</div>' +
-        '</div>' +
-        '<div class="card" style="margin-top:1.1rem;">' +
-          '<div class="card-title">Metas de longo prazo</div>' +
-          '<div class="page-sub" style="margin-top:-8px;margin-bottom:14px;">Toca em "+10%" pra simular um aporte</div>' +
-          '<div id="goalList"></div>' +
-        '</div>' +
-      '</div>';
-
-    document.getElementById('backBtn').onclick = function(){ navigate('overview'); };
-
-    var goRx = document.getElementById('goRaioX');
-    if(goRx) goRx.onclick = function(){ navigate('cofrin', 'relat'); };
-    var tabsEl = document.getElementById('monthTabs');
-    months.forEach(function(m){
-      var b = document.createElement('button');
-      b.className = 'month-tab' + (m.k === sel ? ' active' : '');
-      b.textContent = m.l;
-      b.onclick = function(){
-        var dd = loadData(); ensureFinancas(dd);
-        dd.financas.invoice.selectedMonth = m.k;
-        saveData(dd);
-        renderFinancasPage();
-      };
-      tabsEl.appendChild(b);
-    });
-
-    document.getElementById('uploadZone').onclick = function(){ document.getElementById('fileInput').click(); };
-    document.getElementById('fileInput').addEventListener('change', function(e){
-      var f = e.target.files && e.target.files[0];
-      if(!f) return;
-      var dd = loadData(); ensureFinancas(dd);
-      dd.financas.invoice.months[dd.financas.invoice.selectedMonth].fileName = f.name;
-      saveData(dd);
-      renderFinancasPage();
-    });
-
-    var goalList = document.getElementById('goalList');
-    fin.goals.forEach(function(g){
-      var row = document.createElement('div');
-      row.className = 'goal-row';
-      row.innerHTML =
-        '<div class="goal-top"><span class="goal-name">' + escapeHtml(g.name) + '</span><span class="goal-pct">' + g.progress + '%</span></div>' +
-        '<div class="goal-track-row"><div class="mini-bar"><div class="mini-bar-fill" style="width:' + g.progress + '%"></div></div><button class="boost-btn">+10%</button></div>';
-      row.querySelector('.boost-btn').onclick = function(){
-        var dd = loadData(); ensureFinancas(dd);
-        var goal = dd.financas.goals.find(function(x){ return x.id === g.id; });
-        goal.progress = Math.min(100, goal.progress + 10);
-        saveData(dd);
-        renderFinancasPage();
-      };
-      goalList.appendChild(row);
-    });
-  }
-
-  /* ---------- Carreira ---------- */
-  function seedCarreira(data){
-    data.carreira = { tracks:[
-      { id:'comercial', name:'Projetos do comercial', subtitle:'Plano de ação da frente CLT',
-        stats:[{ label:'Propostas ativas', value:'4' }, { label:'Reuniões essa semana', value:'3' }],
-        projects:[
-          { id:'p1', name:'Prospecção de novos clientes e parcerias', progress:55 },
-          { id:'p2', name:'Follow-up de propostas em aberto', progress:30 },
-          { id:'p3', name:'Fechamento de contratos do trimestre', progress:70 }
-        ] },
-      { id:'influencer', name:'Projetos de influenciadora', subtitle:'Plano de ação da frente de conteúdo',
-        stats:[{ label:'Seguidores no mês', value:'+320' }, { label:'Parcerias fechadas', value:'2' }],
-        projects:[
-          { id:'p4', name:'Calendário de conteúdo da semana', progress:60 },
-          { id:'p5', name:'Negociação com marcas parceiras', progress:25 },
-          { id:'p6', name:'Gravação e edição de reels e podcast', progress:80 }
-        ] }
-    ] };
-  }
-  function ensureCarreira(data){
-    if(!data.carreira || typeof data.carreira !== 'object' || !Array.isArray(data.carreira.tracks)) seedCarreira(data);
-    return data.carreira;
-  }
-
-  function renderCarreiraPage(){
-    var pillar = PILLARS.find(function(p){ return p.id === 'carreira'; });
-    var data = loadData();
-    ensureCarreira(data);
-    saveData(data);
-
-    var body = pageHeaderHtml(pillar, 'Plano de ação e evolução', 'As duas frentes da carreira, cada uma com seu plano — toca em "+10%" conforme for avançando.') +
-      '<div class="pillar-body" style="--accent:' + pillar.accent + '">';
-    data.carreira.tracks.forEach(function(t){
-      body += '<div class="card" style="margin-bottom:1.1rem;">' +
-        '<div class="card-title">' + escapeHtml(t.name) + '</div>' +
-        '<div class="page-sub" style="margin-top:-8px;margin-bottom:12px;">' + escapeHtml(t.subtitle) + '</div>' +
-        '<div class="track-stats">' + t.stats.map(function(s){ return '<span>' + s.label + ': <strong>' + s.value + '</strong></span>'; }).join('') + '</div>' +
-        '<div class="track-projects" data-track="' + t.id + '"></div>' +
-      '</div>';
-    });
-    body += '</div>';
-
-    var main = document.getElementById('main');
-    main.innerHTML = body;
-    document.getElementById('backBtn').onclick = function(){ navigate('overview'); };
-
-    data.carreira.tracks.forEach(function(t){
-      var container = document.querySelector('.track-projects[data-track="' + t.id + '"]');
-      t.projects.forEach(function(p){
-        var row = document.createElement('div');
-        row.className = 'goal-row';
-        row.innerHTML =
-          '<div class="goal-top"><span class="goal-name">' + escapeHtml(p.name) + '</span><span class="goal-pct">' + p.progress + '%</span></div>' +
-          '<div class="goal-track-row"><div class="mini-bar"><div class="mini-bar-fill" style="width:' + p.progress + '%"></div></div><button class="boost-btn">+10%</button></div>';
-        row.querySelector('.boost-btn').onclick = function(){
-          var dd = loadData(); ensureCarreira(dd);
-          var track = dd.carreira.tracks.find(function(x){ return x.id === t.id; });
-          var proj = track.projects.find(function(x){ return x.id === p.id; });
-          proj.progress = Math.min(100, proj.progress + 10);
-          saveData(dd);
-          renderCarreiraPage();
-        };
-        container.appendChild(row);
-      });
-    });
-  }
-
-  /* ---------- Mente ---------- */
-  function ensureMente(data, weekKey){
-    if(!data.mente || typeof data.mente !== 'object') data.mente = {};
-    if(!data.mente.weeks || typeof data.mente.weeks !== 'object') data.mente.weeks = {};
-    if(!data.mente.weeks[weekKey] || !data.mente.weeks[weekKey].ratings){
-      data.mente.weeks[weekKey] = { checkin:'', goodThing:'', ratings:{ saude:0, sono:0, leitura:0, financas:0, carreira:0 }, insights:'' };
-    }
-    return data.mente;
-  }
-
-  function renderMentePage(){
-    var pillar = PILLARS.find(function(p){ return p.id === 'mente'; });
-    var data = loadData();
-    var wk = getWeekKey();
-    ensureMente(data, wk);
-    saveData(data);
-    var doc = data.mente.weeks[wk];
-    var ratingTargets = [
-      { id:'saude', name:'Saúde' }, { id:'sono', name:'Sono' }, { id:'leitura', name:'Estudo' },
-      { id:'financas', name:'Finanças' }, { id:'carreira', name:'Carreira' }
-    ];
-
-    var main = document.getElementById('main');
-    main.innerHTML = pageHeaderHtml(pillar, 'Check-in e balanço da semana', 'Como você tá, o que aprendeu e como foi a semana — terapia, leituras e reflexões num lugar só.') +
-      '<div class="pillar-body" style="--accent:' + pillar.accent + '">' +
-        '<div class="card">' +
-          '<div class="card-title">Check-in emocional</div>' +
-          '<div class="page-sub" style="margin-top:-8px;margin-bottom:10px;">Um espaço pra registrar como você tá, e a nota que você dá pros outros pilares essa semana</div>' +
-          '<textarea class="text-input" id="menteCheckin" style="min-height:80px;" placeholder="Hoje foi mais corrido que o normal, mas consegui equilibrar bem treino e trabalho.">' + escapeHtml(doc.checkin) + '</textarea>' +
-          '<div class="field-label" style="margin-top:16px;">Uma coisa boa de hoje</div>' +
-          '<input type="text" class="text-input" id="menteGood" placeholder="Um café da manhã tranquilo antes de sair de casa." value="' + escapeHtml(doc.goodThing) + '">' +
-        '</div>' +
-        '<div class="card" style="margin-top:1.1rem;">' +
-          '<div class="card-title">Como está cada pilar essa semana</div>' +
-          '<div class="rating-table" id="ratingTable"></div>' +
-        '</div>' +
-        '<div class="card" style="margin-top:1.1rem;">' +
-          '<div class="card-title">Insights &amp; aprendizados</div>' +
-          '<div class="page-sub" style="margin-top:-8px;margin-bottom:10px;">Principais aprendizados da semana — insights da terapia, de leituras, do que vier</div>' +
-          '<textarea class="text-input" id="menteInsights" style="min-height:80px;" placeholder="Na terapia essa semana caí na ficha de que eu meço meu valor pela produtividade — quero praticar terminar o dia em paz mesmo sem tudo feito.">' + escapeHtml(doc.insights) + '</textarea>' +
-        '</div>' +
-      '</div>';
-
-    document.getElementById('backBtn').onclick = function(){ navigate('overview'); };
-
-    [['menteCheckin','checkin'], ['menteGood','goodThing'], ['menteInsights','insights']].forEach(function(pair){
-      document.getElementById(pair[0]).addEventListener('input', function(e){
-        var dd = loadData(); ensureMente(dd, wk);
-        dd.mente.weeks[wk][pair[1]] = e.target.value;
-        saveData(dd);
-      });
-    });
-
-    var table = document.getElementById('ratingTable');
-    ratingTargets.forEach(function(rt){
-      var targetPillar = PILLARS.find(function(p){ return p.id === rt.id; });
-      var current = doc.ratings[rt.id] || 0;
-      var row = document.createElement('div');
-      row.className = 'rating-row';
-      row.style.setProperty('--dotcolor', targetPillar.accent);
-      var dotsWrap = document.createElement('div');
-      dotsWrap.className = 'rating-dots';
-      for(var i=1;i<=5;i++){
-        (function(val){
-          var dot = document.createElement('button');
-          dot.className = 'rating-dot' + (val <= current ? ' filled' : '');
-          dot.setAttribute('aria-label', 'Nota ' + val);
-          dot.onclick = function(){
-            var dd = loadData(); ensureMente(dd, wk);
-            var cur = dd.mente.weeks[wk].ratings[rt.id] || 0;
-            dd.mente.weeks[wk].ratings[rt.id] = (cur === val) ? 0 : val;
-            saveData(dd);
-            renderMentePage();
-          };
-          dotsWrap.appendChild(dot);
-        })(i);
-      }
-      var nameSpan = document.createElement('span');
-      nameSpan.className = 'rating-name';
-      nameSpan.textContent = rt.name;
-      row.appendChild(nameSpan);
-      row.appendChild(dotsWrap);
-      table.appendChild(row);
-    });
-  }
-
-  /* ---------- Overview ---------- */
-  function getPillarWeekSummary(pillar, data, weekKey){
-    switch(pillar.id){
-      case 'sono': {
-        ensureSono(data);
-        var wdS = data.sono.weeks[weekKey];
-        var hoursArrS = WEEKDAYS.map(function(d){ return wdS.hours[d.key]; });
-        var avgS = hoursArrS.reduce(function(s,v){ return s+v; },0) / hoursArrS.length;
-        var nights7S = hoursArrS.filter(function(v){ return v >= 7; }).length;
-        return { percent: Math.round(nights7S/7*100), metric: avgS.toFixed(1) + 'h de média · ' + nights7S + '/7 noites com 7h+' };
-      }
-      case 'saude': {
-        ensureSaude(data);
-        var wd = data.saude.weeks[weekKey];
-        var days = saudeDaysCount(wd);
-        return { percent: Math.min(100, Math.round(days/wd.meta*100)), metric: days + '/' + wd.meta + ' dias de treino' };
-      }
-      case 'financas': {
-        ensureFinancas(data);
-        var goals = data.financas.goals;
-        var avgF = Math.round(goals.reduce(function(s,g){ return s+g.progress; },0) / goals.length);
-        return { percent: avgF, metric: avgF + '% das metas de longo prazo' };
-      }
-      case 'carreira': {
-        ensureCarreira(data);
-        var allP = data.carreira.tracks.reduce(function(a,t){ return a.concat(t.projects); }, []);
-        var avgC = Math.round(allP.reduce(function(s,p){ return s+p.progress; },0) / allP.length);
-        return { percent: avgC, metric: avgC + '% do plano de ação' };
-      }
-      case 'mente': {
-        ensureMente(data, weekKey);
-        var ratings = data.mente.weeks[weekKey].ratings;
-        var vals = Object.keys(ratings).map(function(k){ return ratings[k]; }).filter(function(v){ return v > 0; });
-        if(!vals.length) return { percent:0, metric:'ainda sem check-in essa semana' };
-        var avgM = vals.reduce(function(s,v){ return s+v; },0) / vals.length;
-        return { percent: Math.round(avgM/5*100), metric:'nota média ' + avgM.toFixed(1) + '/5' };
-      }
-      case 'leitura': {
-        ensureLeitura(data);
-        var streak = calcStreak(Object.keys(data.leitura.dailyPages).filter(function(k){ return data.leitura.dailyPages[k] >= 15; }));
-        return { percent: Math.min(100, Math.round(streak/7*100)), metric: streak + ' dia' + (streak===1?'':'s') + ' de sequência' };
-      }
-      default:
-        return { percent:0, metric:'—' };
-    }
-  }
-
-  function computeOverviewStats(data, weekKey){
-    var onTrack = 0, totalProgress = 0;
-    var perPillar = PILLARS.map(function(p){
-      var s = getPillarWeekSummary(p, data, weekKey);
-      if(s.percent >= 70) onTrack++;
-      totalProgress += s.percent;
-      return { pillar:p, progress:s.percent, metric:s.metric };
-    });
-    saveData(data);
-    return { onTrack:onTrack, consistency: Math.round(totalProgress / PILLARS.length), perPillar: perPillar };
-  }
-
-  function updateSidebarFooter(){
-    var data = loadData();
-    var stats = computeOverviewStats(data, getWeekKey());
-    document.getElementById('footConsistency').textContent = stats.consistency + '%';
-    document.getElementById('footBar').style.width = stats.consistency + '%';
-  }
-
-  function renderOverview(){
-    var data = loadData();
-    var weekKey = getWeekKey();
-    var stats = computeOverviewStats(data, weekKey);
-
-    var main = document.getElementById('main');
-    main.innerHTML =
-      '<div class="eyebrow">Visão geral</div>' +
-      '<div class="page-head">' +
-        '<div><h1>Ericzin\'s Life Plan</h1>' +
-        '<div class="page-sub">Seis pilares, um plano de ação e uma evolução pra acompanhar em cada um. Clique num cartão pra abrir o pilar.</div></div>' +
-      '</div>' +
-      '<div class="hero-card">' +
-        '<div><div class="hero-label">Pilares em dia esta semana</div>' +
-        '<div class="hero-value">' + stats.onTrack + '<span class="of"> / ' + PILLARS.length + '</span></div></div>' +
-        '<div class="hero-meta"><div class="date">' + capitalize(formatToday()) + '</div>' +
-        'semana em andamento<br><span class="hero-chip">' + stats.consistency + '% de consistência</span></div>' +
-      '</div>' +
-      '<div class="grid" id="overviewGrid"></div>' +
-      (cloudMode && cloudUser
-        ? '<div class="m-account"><img alt="" id="mAvatar">' +
-          '<div class="who">' + escapeHtml(cloudUser.displayName || cloudUser.email || 'Conta') + '</div>' +
-          '<button type="button" id="mSignOut">Sair</button></div>'
-        : '');
-    var mSignOut = document.getElementById('mSignOut');
-    if(mSignOut){
-      mSignOut.onclick = cloudSignOut;
-      document.getElementById('mAvatar').src = cloudUser.photoURL || '';
-    }
-
-    var grid = document.getElementById('overviewGrid');
-    stats.perPillar.forEach(function(row){
-      var p = row.pillar;
-      var card = document.createElement('button');
-      card.className = 'pillar-card';
-      card.style.setProperty('--accent', p.color);
-      card.onclick = function(){ navigate(p.id); };
-      card.innerHTML =
-        '<div class="pillar-top">' +
-          '<div class="pillar-ico">' + ICONS[p.icon] + '</div>' +
-          '<div class="pillar-name">' + p.name + '</div>' +
-        '</div>' +
-        '<div class="pillar-metric">' + row.metric + '</div>' +
-        '<div class="pillar-bar"><div class="pillar-bar-fill" style="width:' + row.progress + '%"></div></div>';
-      grid.appendChild(card);
-    });
-  }
-
-  /* ---------- routing / sidebar ---------- */
-  var CF_TABS = [
-    { id:'dash',    ico:'📊', name:'Resumo',          short:'Resumo' },
-    { id:'tx',      ico:'💸', name:'Lançamentos',     short:'Lançam.' },
-    { id:'relat',   ico:'🔎', name:'Raio-X',          short:'Raio-X' },
-    { id:'mercado', ico:'🛒', name:'Mercado',         short:'Mercado' },
-    { id:'contas',  ico:'🏠', name:'Contas da casa',  short:'Contas' },
-    { id:'metas',   ico:'✅', name:'Metas do dia',    short:'Metas' },
-    { id:'pets',    ico:'🐾', name:'Coleção',         short:'Coleção' },
-    { id:'admin',   ico:'🛠️', name:'Admin',           short:'Admin' }
-  ];
-  function cfTabValid(t){ return CF_TABS.some(function(x){ return x.id === t; }); }
-  function loadCfTab(){
-    try{ var t = localStorage.getItem('lp_cofrin_tab'); return cfTabValid(t) ? t : 'dash'; }catch(e){ return 'dash'; }
-  }
-  /* link da notificação: #cofrin/metas abre direto na aba Metas do dia */
-  var hashPage = (location.hash.match(/^#cofrin(?:\/(\w+))?$/) || null);
-  var state = { page: hashPage ? 'cofrin' : loadPage(), cfTab: hashPage && cfTabValid(hashPage[1]) ? hashPage[1] : loadCfTab() };
-  if(hashPage){ savePage('cofrin'); try{ history.replaceState(null, '', location.pathname + location.search); }catch(e){} }
-
-  function navigate(page, cfTab){
-    state.page = page;
-    if(cfTab){ state.cfTab = cfTab; try{ localStorage.setItem('lp_cofrin_tab', cfTab); }catch(e){} }
-    savePage(page);
-    render();
-    window.scrollTo({ top:0, behavior:'smooth' });
-  }
-
-  function buildSidebar(){
-    var navOverview = document.getElementById('navOverview');
-    var navPillars = document.getElementById('navPillars');
-    navOverview.innerHTML = '';
-    navPillars.innerHTML = '';
-
-    var ovBtn = document.createElement('button');
-    ovBtn.className = 'nav-item' + (state.page === 'overview' ? ' active' : '');
-    ovBtn.title = 'Visão geral';
-    ovBtn.innerHTML = '<span class="ico">' + ICONS.overview + '</span><span class="nav-text">Visão geral</span><span class="nav-short">Início</span>';
-    ovBtn.onclick = function(){ navigate('overview'); };
-    navOverview.appendChild(ovBtn);
-
-    PILLARS.forEach(function(p){
-      var btn = document.createElement('button');
-      btn.className = 'nav-item' + (state.page === p.id ? ' active' : '');
-      btn.title = p.name;
-      btn.innerHTML = '<span class="ico" style="color:' + p.color + '">' + ICONS[p.icon] + '</span><span class="nav-text">' + p.name + '</span><span class="nav-short">' + (p.short || p.name) + '</span>';
-      btn.onclick = function(){ navigate(p.id); };
-      navPillars.appendChild(btn);
-    });
-
-    var navApps = document.getElementById('navApps');
-    navApps.innerHTML = '';
-    var cfBtn = document.createElement('button');
-    var cfActive = state.page === 'cofrin';
-    document.querySelector('.sidebar').classList.toggle('in-cofrin', cfActive);
-    cfBtn.className = 'nav-item cf-main' + (cfActive ? ' active' : '');
-    cfBtn.title = 'Meu Cofrin';
-    cfBtn.innerHTML = '<span class="ico"' + (cfActive ? '' : ' style="color:#a99cf5"') + '>' + ICONS.cofrin + '</span><span class="nav-text">Meu Cofrin</span><span class="nav-short">Cofrin</span>';
-    cfBtn.onclick = function(){ navigate('cofrin'); };
-    navApps.appendChild(cfBtn);
-
-    /* as abas do Cofrin moram aqui no menu do LifePlan */
-    var adminBtn = document.getElementById('tabAdminBtn');
-    CF_TABS.forEach(function(t){
-      if(t.id === 'admin' && (!adminBtn || adminBtn.classList.contains('hidden'))) return;
-      var b = document.createElement('button');
-      b.className = 'nav-item cf-sub' + (cfActive && state.cfTab === t.id ? ' active' : '');
-      b.title = t.name;
-      b.innerHTML = '<span class="ico">' + t.ico + '</span><span class="nav-text">' + t.name + '</span><span class="nav-short">' + t.short + '</span>';
-      b.onclick = function(){ navigate('cofrin', t.id); };
-      navApps.appendChild(b);
-    });
-    buildMobileMenu();
-  }
-
-  /* Menu do celular (topo): o botão mostra a seção atual, o painel lista as do Life Plan e as do Cofrin */
-  function buildMobileMenu(){
-    var top = document.getElementById('mTop'), btn = document.getElementById('mTopBtn'), panel = document.getElementById('mPanel');
-    if(!top) return;
-    var inCf = state.page === 'cofrin';
-    var curIco, curName;
-    if(inCf){
-      var t = CF_TABS.filter(function(x){ return x.id === state.cfTab; })[0] || CF_TABS[0];
-      curIco = t.ico; curName = t.name;
-    }else if(state.page === 'overview'){ curIco = ICONS.overview; curName = 'Visão geral'; }
-    else{
-      var pl = PILLARS.filter(function(x){ return x.id === state.page; })[0] || PILLARS[0];
-      curIco = ICONS[pl.icon]; curName = pl.name;
-    }
-    top.classList.toggle('cf', inCf);
-    btn.innerHTML = '<span class="ico">' + curIco + '</span><span class="lbl">' + curName + '</span><span class="grp">' + (inCf ? 'Cofrin' : 'Life Plan') + '</span><span class="chev">▼</span>';
-
-    function item(ico, name, active, go){
-      var b = document.createElement('button');
-      b.type = 'button'; b.className = 'm-item' + (active ? ' active' : '');
-      b.innerHTML = '<span class="ico">' + ico + '</span><span>' + name + '</span>';
-      b.onclick = function(){ closeMobileMenu(); go(); };
-      return b;
-    }
-    function group(cls, title){
-      var g = document.createElement('div'); g.className = 'm-group ' + cls;
-      g.innerHTML = '<div class="m-group-title">' + title + '</div><div class="m-grid"></div>';
-      panel.appendChild(g); return g.lastChild;
-    }
-    panel.innerHTML = '';
-    var lp = group('lp', 'Life Plan');
-    lp.appendChild(item(ICONS.overview, 'Visão geral', state.page === 'overview', function(){ navigate('overview'); }));
-    PILLARS.forEach(function(p){
-      lp.appendChild(item(ICONS[p.icon], p.name, state.page === p.id, function(){ navigate(p.id); }));
-    });
-    var cf = group('cf', 'Meu Cofrin');
-    var adminBtn = document.getElementById('tabAdminBtn');
-    CF_TABS.forEach(function(t){
-      if(t.id === 'admin' && (!adminBtn || adminBtn.classList.contains('hidden'))) return;
-      cf.appendChild(item(t.ico, t.name, inCf && state.cfTab === t.id, function(){ navigate('cofrin', t.id); }));
-    });
-  }
-  function closeMobileMenu(){
-    var top = document.getElementById('mTop');
-    if(top){ top.classList.remove('open'); document.getElementById('mTopBtn').setAttribute('aria-expanded', 'false'); }
-  }
-  (function(){
-    var btn = document.getElementById('mTopBtn');
-    btn.onclick = function(){
-      var open = document.getElementById('mTop').classList.toggle('open');
-      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-    };
-    document.getElementById('mBackdrop').onclick = closeMobileMenu;
-    document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeMobileMenu(); });
-  })();
-
-  /* Meu Cofrin mora num contêiner próprio (#cofrin), fora do #main: o render das
-     outras páginas reescreve o #main inteiro e apagaria o app. Aqui só alternamos qual aparece. */
-  function showCofrin(on){
-    document.getElementById('main').hidden = on;
-    var cf = document.getElementById('cofrin');
-    if(cf) cf.hidden = !on;
-    if(on && window.cofrinAbrirAba) window.cofrinAbrirAba(state.cfTab);
-    if(on && window.cofrinOnShow) window.cofrinOnShow();
-  }
-  /* o cofrin.js carrega depois deste script; quando chega, reaplica a aba */
-  window.lifeplanCofrinPronto = function(){ if(state.page === 'cofrin') showCofrin(true); };
-  /* a aba Admin só aparece depois que o cofrin confirma o usuário */
-  var adminTab = document.getElementById('tabAdminBtn');
-  if(adminTab && window.MutationObserver) new MutationObserver(function(){ buildSidebar(); }).observe(adminTab, { attributes:true, attributeFilter:['class'] });
-
-  function renderPillarOrOverview(){
-    if(state.page === 'overview'){ renderOverview(); return; }
-    var p = PILLARS.find(function(x){ return x.id === state.page; });
-    if(!p){ state.page = 'overview'; renderOverview(); return; }
-    if(p.id === 'saude') renderSaudePage();
-    else if(p.id === 'sono') renderSonoPage();
-    else if(p.id === 'financas') renderFinancasPage();
-    else if(p.id === 'carreira') renderCarreiraPage();
-    else if(p.id === 'mente') renderMentePage();
-    else if(p.id === 'leitura') renderLeituraPage();
-  }
-
-  function render(){
-    buildSidebar();
-    updateAccountRow();
-    showCofrin(state.page === 'cofrin');
-    if(state.page === 'cofrin'){ updateSidebarFooter(); return; }
-    try{
-      renderPillarOrOverview();
-    }catch(err){
-      document.getElementById('main').innerHTML =
-        '<div class="card"><div class="card-title" style="color:var(--primary-ink);">Algo deu errado ao abrir esta página</div>' +
-        '<div class="page-sub">Tenta clicar em "Visão geral" e abrir de novo. Detalhe técnico: ' + escapeHtml(String(err && err.message || err)) + '</div></div>';
-    }
-    updateSidebarFooter();
-  }
-
-  /* o cofrin pede para abrir uma aba (ex.: Resumo -> Raio-X filtrado por categoria) */
-  window.lpCofrinTab = function(tab){ navigate('cofrin', cfTabValid(tab) ? tab : state.cfTab); };
-
-  /* notificação clicada com o app já aberto: só o hash muda */
-  window.addEventListener('hashchange', function(){
-    var m = location.hash.match(/^#cofrin(?:\/(\w+))?$/);
-    if(!m) return;
-    navigate('cofrin', cfTabValid(m[1]) ? m[1] : state.cfTab);
-    try{ history.replaceState(null, '', location.pathname + location.search); }catch(e){}
-  });
-
-  if(cloudConfigured()){ bootCloud(); } else { render(); }
-})();
-</script>
-<script src="cofrin.js"></script>
-<script>if(window.lifeplanCofrinPronto) window.lifeplanCofrinPronto();</script>
+<script src="app.js"></script>
 </body>
 </html>
