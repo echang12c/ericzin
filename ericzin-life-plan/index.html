@@ -98,7 +98,7 @@
       <button type="button" data-tab="dash"><svg class="i" aria-hidden="true"><use href="#i-home"/></svg><span>Início</span></button>
       <button type="button" data-tab="tx"><svg class="i" aria-hidden="true"><use href="#i-list"/></svg><span>Lançamentos</span></button>
       <button type="button" data-tab="relat"><svg class="i" aria-hidden="true"><use href="#i-chart"/></svg><span>Raio-X</span></button>
-      <button type="button" data-tab="metas"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>Metas do dia</span></button>
+      <button type="button" data-tab="metas"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>Planner</span></button>
       <div class="sideSep"></div>
       <button type="button" data-tab="mercado"><svg class="i" aria-hidden="true"><use href="#i-cart"/></svg><span>Mercado</span></button>
       <button type="button" data-tab="contas"><svg class="i" aria-hidden="true"><use href="#i-bill"/></svg><span>Contas da casa</span></button>
@@ -291,44 +291,23 @@
       <div class="card chartBox" style="margin-top:14px"><canvas id="chartContas"></canvas></div>
     </section>
 
-    <!-- ===== Metas do dia ===== -->
+    <!-- ===== Planner do dia ===== -->
     <section id="tab-metas" class="hidden">
-      <div class="diaBar">
-        <button class="nav" id="prevDia" aria-label="Dia anterior"><svg class="i" aria-hidden="true"><use href="#i-left"/></svg></button>
-        <div class="diaLabel" id="diaLabel"></div>
-        <button class="nav" id="nextDia" aria-label="Próximo dia"><svg class="i" aria-hidden="true"><use href="#i-right"/></svg></button>
-        <button class="btnHoje" id="btnHojeDia">Hoje</button>
-      </div>
-      <div class="card metaHero">
-        <div class="emoji" id="metaEmoji">📝</div>
-        <div class="info">
-          <div class="count" id="metaCount">Nenhuma meta ainda</div>
-          <div class="msg" id="metaMsg">Adicione o que você precisa fazer hoje!</div>
-          <div class="bar"><span id="metaBar" style="width:0%"></span></div>
+      <div class="plHead">
+        <div class="plDia" id="plDia">Hoje</div>
+        <div class="plMes">
+          <button type="button" class="plNav" id="prevSem" aria-label="Semana anterior"><svg class="i" aria-hidden="true"><use href="#i-left"/></svg></button>
+          <span id="plMes">&nbsp;</span>
+          <button type="button" class="plNav" id="nextSem" aria-label="Próxima semana"><svg class="i" aria-hidden="true"><use href="#i-right"/></svg></button>
         </div>
+      </div>
+      <div class="plSemana" id="plSemana"></div>
+      <div class="plResumo">
+        <span id="plCount">Nenhuma tarefa</span>
+        <button type="button" class="btnHoje hidden" id="btnHojeDia">Voltar para hoje</button>
       </div>
       <div id="bauBox"></div>
-      <div class="card" id="metaList"><div class="empty">Nenhuma meta programada para este dia. Crie uma abaixo! ✨</div></div>
-      <h2 class="section">Nova meta</h2>
-      <form class="card metaForm" id="metaForm">
-        <div class="metaAdd">
-          <input id="metaInput" placeholder="Ex.: passear com o cachorro, ler 20 páginas…" maxlength="120" autocomplete="off">
-          <button type="submit" class="btnAddMeta" aria-label="Programar meta"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg></button>
-        </div>
-        <div class="field"><label>Repete em</label>
-          <div class="diasRow" id="diasRow">
-            <button type="button" class="diaChip" id="chipTodos">Todo dia</button>
-            <button type="button" class="diaChip" data-d="1">Seg</button>
-            <button type="button" class="diaChip" data-d="2">Ter</button>
-            <button type="button" class="diaChip" data-d="3">Qua</button>
-            <button type="button" class="diaChip" data-d="4">Qui</button>
-            <button type="button" class="diaChip" data-d="5">Sex</button>
-            <button type="button" class="diaChip" data-d="6">Sáb</button>
-            <button type="button" class="diaChip" data-d="0">Dom</button>
-          </div>
-        </div>
-        <div class="field"><label>Horário (opcional) · avisa na hora 🔔</label><input type="time" id="metaHora"></div>
-      </form>
+      <div id="metaList"></div>
     </section>
 
     <!-- ===== Mais (celular) ===== -->
@@ -353,7 +332,7 @@
         <div class="emoji">🐾</div>
         <div class="info">
           <div class="count" id="petCount">&nbsp;</div>
-          <div class="msg">Complete todas as metas do dia para ganhar um baú com um pet surpresa!</div>
+          <div class="msg">A cada 3 tarefas concluídas no planner você ganha um baú com um pet surpresa!</div>
           <div class="bar"><span id="petBar" style="width:0%"></span></div>
         </div>
       </div>
@@ -404,7 +383,7 @@
     <button type="button" data-tab="dash"><svg class="i" aria-hidden="true"><use href="#i-home"/></svg><span>Início</span></button>
     <button type="button" data-tab="tx"><svg class="i" aria-hidden="true"><use href="#i-list"/></svg><span>Lançamentos</span></button>
     <button type="button" data-tab="relat"><svg class="i" aria-hidden="true"><use href="#i-chart"/></svg><span>Raio-X</span></button>
-    <button type="button" data-tab="metas"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>Metas</span></button>
+    <button type="button" data-tab="metas"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>Planner</span></button>
     <button type="button" data-tab="mais"><svg class="i" aria-hidden="true"><use href="#i-grid"/></svg><span>Mais</span></button>
   </nav>
 
@@ -444,6 +423,48 @@
       </select></div>
       <div id="txCustomFields" style="display:contents"></div>
       <div class="modalActions">
+        <button type="button" class="btnGhost" data-close>Cancelar</button>
+        <button type="submit" class="btnPrimary">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== Modal tarefa do planner ===== -->
+<div class="modalWrap hidden" id="tarefaModal">
+  <div class="modal">
+    <h3 id="tarefaTitulo">Nova tarefa</h3>
+    <form id="tarefaForm">
+      <div class="field"><label>O que vai fazer?</label><input id="tarefaTexto" placeholder="Ex.: treino, reunião, ler 20 páginas…" maxlength="120" autocomplete="off" required></div>
+      <div class="field"><label>Ícone</label><div class="emojiRow" id="tarefaEmojis"></div></div>
+      <div class="grid2f">
+        <div class="field"><label>Horário (opcional) · avisa 🔔</label><input type="time" id="tarefaHora"></div>
+        <div class="field"><label>Duração</label><select id="tarefaDur">
+          <option value="">Sem duração</option>
+          <option value="15">15 min</option><option value="30">30 min</option><option value="45">45 min</option>
+          <option value="60">1 h</option><option value="90">1 h 30</option><option value="120">2 h</option><option value="180">3 h</option>
+        </select></div>
+      </div>
+      <div class="field"><label>Repetir</label>
+        <div class="segment" id="tarefaRepSeg">
+          <button type="button" data-r="dia" class="on">Só neste dia</button>
+          <button type="button" data-r="sem">Toda semana</button>
+        </div>
+      </div>
+      <div class="field hidden" id="tarefaDiasBox">
+        <div class="diasRow" id="diasRow">
+          <button type="button" class="diaChip" id="chipTodos">Todo dia</button>
+          <button type="button" class="diaChip" data-d="1">Seg</button>
+          <button type="button" class="diaChip" data-d="2">Ter</button>
+          <button type="button" class="diaChip" data-d="3">Qua</button>
+          <button type="button" class="diaChip" data-d="4">Qui</button>
+          <button type="button" class="diaChip" data-d="5">Sex</button>
+          <button type="button" class="diaChip" data-d="6">Sáb</button>
+          <button type="button" class="diaChip" data-d="0">Dom</button>
+        </div>
+      </div>
+      <div class="modalActions">
+        <button type="button" class="btnDanger hidden" id="tarefaExcluir">Excluir</button>
         <button type="button" class="btnGhost" data-close>Cancelar</button>
         <button type="submit" class="btnPrimary">Salvar</button>
       </div>
@@ -648,8 +669,8 @@
     </form>
     <h4 class="perfilSub">Notificações</h4>
     <div class="notifRow">
-      <div class="notifTxt"><b>Avisos de metas neste aparelho</b>
-        <div class="notifSub">Receba uma notificação na hora das metas que têm horário.</div>
+      <div class="notifTxt"><b>Avisos do planner neste aparelho</b>
+        <div class="notifSub">Receba uma notificação na hora das tarefas que têm horário.</div>
       </div>
       <button type="button" class="switch" id="notifSwitch" role="switch" aria-checked="false" aria-label="Ativar notificações"><span class="knob"></span></button>
     </div>
@@ -686,7 +707,7 @@
 <div class="modalWrap hidden" id="delModal">
   <div class="modal">
     <h3>Excluir minha conta</h3>
-    <p class="impHint" style="color:var(--danger)"><b>Esta ação é definitiva.</b> Serão apagados: seus lançamentos, categorias, metas, coleção de pets, perfil e sua conta de login. Não há como recuperar depois.</p>
+    <p class="impHint" style="color:var(--danger)"><b>Esta ação é definitiva.</b> Serão apagados: seus lançamentos, categorias, tarefas do planner, coleção de pets, perfil e sua conta de login. Não há como recuperar depois.</p>
     <p class="impHint">Dica: exporte seus dados antes, se quiser guardar uma cópia.</p>
     <form id="delForm">
       <div class="field"><label>Sua senha (para confirmar que é você)</label><input type="password" id="delSenha" autocomplete="current-password" required></div>
