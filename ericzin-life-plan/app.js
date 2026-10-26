@@ -47,9 +47,9 @@ const state = {
   mes: mesAtual(),              // "YYYY-MM"
   dia: hojeISO(),               // "YYYY-MM-DD" (aba Metas)
   txs: [],                      // lançamentos do mês
-  rotinas: [],                  // metas programadas (recorrentes por dia da semana)
+  rotinas: [],                  // tarefas do planner (recorrentes por dia da semana ou de um dia só)
   metasFeitas: {},              // {rotinaId:true} — status do dia selecionado
-  bauDia: null,                 // recompensa já aberta no dia selecionado
+  bausAbertos: 0,               // baús já abertos no dia selecionado
   inventario: [],               // pets ganhos
   petsCfg: null,                // petsConfig/geral (tela Admin) — null = padrão do código
   admin: false,                 // existe admins/{uid}?
@@ -284,7 +284,7 @@ window.addEventListener('hashchange',()=>{
 const ABAS=['dash','tx','relat','metas','mais','mercado','contas','pets','admin'];
 const ABAS_COM_MES=['dash','tx','contas'];
 const ABAS_DO_MAIS=['mais','mercado','contas','pets','admin'];
-const ABAS_COM_FAB=['dash','tx'];
+const ABAS_COM_FAB=['dash','tx','metas'];
 const ehDesktop=()=>matchMedia('(min-width:900px)').matches;
 function abaValida(t){ return ABAS.includes(t); }
 function abaSalva(){ try{ const t=localStorage.getItem('ericzin_aba'); return abaValida(t)?t:'dash'; }catch(e){ return 'dash'; } }
@@ -300,7 +300,7 @@ function irAba(tab){
     b.classList.toggle('active', ativo);
     if(ativo) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current');
   });
-  const titulos={dash:'Início',tx:'Lançamentos',relat:'Raio-X',metas:'Metas do dia',mais:'Mais',mercado:'Mercado',contas:'Contas da casa',pets:'Coleção',admin:'Admin'};
+  const titulos={dash:'Início',tx:'Lançamentos',relat:'Raio-X',metas:'Planner',mais:'Mais',mercado:'Mercado',contas:'Contas da casa',pets:'Coleção',admin:'Admin'};
   document.getElementById('topTitulo').textContent=titulos[tab];
   document.getElementById('monthBar').classList.toggle('hidden', !ABAS_COM_MES.includes(tab));
   document.getElementById('fabAdd').classList.toggle('hidden', !ABAS_COM_FAB.includes(tab));
@@ -2538,18 +2538,29 @@ document.getElementById('ctDe').onchange=renderContasChart;
 document.getElementById('ctAte').onchange=renderContasChart;
 document.getElementById('ctContaSel').onchange=e=>{ ct.conta=e.target.value; renderContasChart(); };
 
-/* ---------------- Metas do dia (rotinas programáveis) ---------------- */
+/* ---------------- Planner do dia (tarefas programáveis) ---------------- */
 const DIAS_SEMANA=['dom','seg','ter','qua','qui','sex','sáb'];
+const INICIAL_DIA=['D','S','T','Q','Q','S','S'];
 const TODOS_OS_DIAS=()=>new Set([0,1,2,3,4,5,6]);
-let novaDias=TODOS_OS_DIAS(); // por padrão a meta se repete todo dia; é só desmarcar o que não quiser
+const TAREFAS_POR_BAU=3; // a cada N tarefas concluídas no dia sai um baú (no 1º, vale o total se o dia tiver menos)
+const EMOJIS_TAREFA=['📌','💼','🏃','🧘','📚','🍽️','🛒','💊','📞','🧹','🧺','💧','🛏️','🚲','💻','💰','🐶','🎮'];
+const PERIODOS=[['any','Qualquer hora','⏱️'],['manha','Manhã','🌅'],['dia','Dia','☀️'],['noite','Noite','🌙']];
+let novaDias=TODOS_OS_DIAS(); // em "Toda semana" a tarefa se repete todo dia; é só desmarcar o que não quiser
+let tarefaEdit=null, tarefaEmoji=EMOJIS_TAREFA[0], tarefaRep='dia';
 
-function diaLabelTxt(d){
-  const txt=new Date(d+'T12:00').toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
-  return d===hojeISO() ? 'Hoje · '+txt : txt;
-}
 function diasResumo(dias){
   if(dias.length===7) return 'todos os dias';
   return [1,2,3,4,5,6,0].filter(d=>dias.includes(d)).map(d=>DIAS_SEMANA[d]).join(' · ');
+}
+function fimDaTarefa(hora,dur){
+  const [h,m]=hora.split(':').map(Number), t=(h*60+m+dur)%1440;
+  return `${String(Math.floor(t/60)).padStart(2,'0')}:${String(t%60).padStart(2,'0')}`;
+}
+function durTxt(d){ return d<60 ? d+' min' : d%60 ? `${Math.floor(d/60)}h${String(d%60).padStart(2,'0')}` : (d/60)+'h'; }
+function periodoDe(r){
+  if(!r.hora) return 'any';
+  const h=Number(r.hora.slice(0,2));
+  return h<12 ? 'manha' : h<18 ? 'dia' : 'noite';
 }
 function escutarRotinas(){
   if(state.unsubRotinas)state.unsubRotinas();
@@ -2561,20 +2572,40 @@ function escutarRotinas(){
 }
 function escutarDiaMetas(){
   if(state.unsubMetaStatus)state.unsubMetaStatus();
-  document.getElementById('diaLabel').textContent=diaLabelTxt(state.dia);
+  renderCabecalhoPlanner();
   state.unsubMetaStatus = col('metasStatus').doc(state.dia).onSnapshot(doc=>{
-    state.metasFeitas = doc.exists ? (doc.data().feitas||{}) : {};
-    state.bauDia = doc.exists ? (doc.data().bau||null) : null;
+    const d=doc.exists ? doc.data() : {};
+    state.metasFeitas = d.feitas||{};
+    // docs antigos só tinham `bau` (1 por dia, quando tudo era concluído)
+    state.bausAbertos = typeof d.bausAbertos==='number' ? d.bausAbertos : (d.bau ? 1 : 0);
     renderMetas();
   });
 }
+function renderCabecalhoPlanner(){
+  const dt=new Date(state.dia+'T12:00');
+  const nome=dt.toLocaleDateString('pt-BR',{weekday:'long'});
+  document.getElementById('plDia').textContent = nome.charAt(0).toUpperCase()+nome.slice(1).replace('-feira','');
+  document.getElementById('plMes').textContent = dt.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}).toUpperCase();
+  const off=(dt.getDay()+6)%7, hoje=hojeISO();
+  document.getElementById('plSemana').innerHTML = Array.from({length:7},(_,i)=>{
+    const d=shiftDia(state.dia,i-off), x=new Date(d+'T12:00');
+    return `<button type="button" class="plDiaBtn ${d===state.dia?'sel':''} ${d===hoje?'hoje':''}" data-d="${d}" aria-label="${diaLabelTxt(d)}">
+      <span>${INICIAL_DIA[x.getDay()]}</span><b>${x.getDate()}</b></button>`;
+  }).join('');
+  document.querySelectorAll('#plSemana .plDiaBtn').forEach(b=>b.onclick=()=>{ state.dia=b.dataset.d; escutarDiaMetas(); });
+  document.getElementById('btnHojeDia').classList.toggle('hidden', state.dia===hoje);
+}
+function diaLabelTxt(d){
+  const txt=new Date(d+'T12:00').toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
+  return d===hojeISO() ? 'Hoje · '+txt : txt;
+}
 function rotinasDoDia(){
   const dw=new Date(state.dia+'T12:00').getDay();
-  return state.rotinas.filter(r=>Array.isArray(r.dias)&&r.dias.includes(dw))
+  return state.rotinas.filter(r=>r.data ? r.data===state.dia : Array.isArray(r.dias)&&r.dias.includes(dw))
     .sort((a,b)=>{
-      if(a.hora&&b.hora) return a.hora.localeCompare(b.hora);
-      if(a.hora) return -1;
-      if(b.hora) return 1;
+      if(a.hora&&b.hora&&a.hora!==b.hora) return a.hora.localeCompare(b.hora);
+      if(a.hora&&!b.hora) return -1;
+      if(b.hora&&!a.hora) return 1;
       return ((a.criadoEm&&a.criadoEm.seconds)||0)-((b.criadoEm&&b.criadoEm.seconds)||0);
     });
 }
@@ -2582,46 +2613,69 @@ function renderMetas(){
   const rotinas=rotinasDoDia();
   const total=rotinas.length;
   const feitas=rotinas.filter(r=>state.metasFeitas[r.id]).length;
-  const pct = total ? Math.round(feitas/total*100) : 0;
-  document.getElementById('metaCount').textContent = total ? `${feitas} de ${total} concluídas` : 'Nenhuma meta neste dia';
-  document.getElementById('metaBar').style.width = pct+'%';
-  document.getElementById('metaEmoji').textContent = !total ? '📝' : feitas===total ? '🎉' : pct>=50 ? '💪' : '🚀';
-  document.getElementById('metaMsg').textContent =
-    !total ? 'Programe suas metas escolhendo os dias da semana!' :
-    feitas===total ? 'Todas concluídas! Você mandou muito bem!' :
-    pct>=50 ? 'Metade do caminho! Continue assim!' : 'Bora! Uma meta de cada vez.';
+  document.getElementById('plCount').textContent = total ? `${feitas} de ${total} concluídas` : 'Nenhuma tarefa neste dia';
 
   const box=document.getElementById('metaList');
-  box.innerHTML = total ? rotinas.map(r=>{
-    const done=!!state.metasFeitas[r.id];
-    return `<div class="metaItem ${done?'done':''}" data-id="${r.id}">
-      <button class="metaCheck" title="${done?'Desmarcar':'Concluir'}">${done?'✓':''}</button>
-      <div class="metaTxt">${esc(r.texto)}<div class="metaDias">${diasResumo(r.dias||[])}</div></div>
-      ${r.hora?`<span class="horaBadge">🕐 ${esc(r.hora)}</span>`:''}
-      <button class="txDel" title="Excluir">✕</button>
-    </div>`;
-  }).join('') : '<div class="empty">Nenhuma meta programada para este dia. Crie uma abaixo! ✨</div>';
+  box.innerHTML = total ? PERIODOS.map(([k,nome,ico])=>{
+    const lista=rotinas.filter(r=>periodoDe(r)===k);
+    if(!lista.length) return '';
+    return `<h3 class="plSec">${ico} ${nome} <span>${lista.length}</span></h3>
+      <div class="plLista">${lista.map(r=>{
+        const done=!!state.metasFeitas[r.id];
+        const quando = r.hora ? (r.dur ? `${esc(r.hora)} → ${fimDaTarefa(r.hora,r.dur)}` : esc(r.hora)) : (r.dur ? durTxt(r.dur) : '');
+        const rep = r.data ? '' : '🔁 '+diasResumo(r.dias||[]);
+        const sub=[quando,rep].filter(Boolean).join(' · ');
+        return `<div class="plItem ${done?'done':''}" data-id="${r.id}">
+          <div class="plIco">${esc(r.emoji||'📌')}</div>
+          <div class="plTxt"><b>${esc(r.texto)}</b>${sub?`<small>${sub}</small>`:''}</div>
+          <button type="button" class="plCheck" aria-label="${done?'Desmarcar':'Concluir'}">${done?'✓':''}</button>
+        </div>`;
+      }).join('')}</div>`;
+  }).join('') : '<div class="empty plVazio">Nada planejado para este dia.<br>Toque no <b>+</b> para programar! ✨</div>';
 
-  box.querySelectorAll('.metaItem').forEach(el=>{
+  box.querySelectorAll('.plItem').forEach(el=>{
     const id=el.dataset.id;
-    el.querySelector('.metaCheck').onclick=async ()=>{
+    el.onclick=()=>abrirTarefaModal(state.rotinas.find(r=>r.id===id));
+    el.querySelector('.plCheck').onclick=async e=>{
+      e.stopPropagation();
       const novo=!state.metasFeitas[id];
       await col('metasStatus').doc(state.dia).set({feitas:{[id]:novo}},{merge:true});
-      if(novo) toast('Meta concluída! 🎉');
-    };
-    el.querySelector('.txDel').onclick=async ()=>{
-      if(confirm('Excluir esta meta? Ela sai de todos os dias da semana.')){
-        await col('rotinas').doc(id).delete(); toast('Meta excluída');
-      }
+      if(novo) toast('Tarefa concluída! 🎉');
     };
   });
   renderBau(total, feitas);
+}
+
+/* nova tarefa / editar tarefa */
+function renderEmojisTarefa(){
+  document.getElementById('tarefaEmojis').innerHTML=EMOJIS_TAREFA.map(e=>
+    `<button type="button" class="emojiBtn ${e===tarefaEmoji?'on':''}" data-e="${e}">${e}</button>`).join('');
+  document.querySelectorAll('#tarefaEmojis .emojiBtn').forEach(b=>b.onclick=()=>{ tarefaEmoji=b.dataset.e; renderEmojisTarefa(); });
+}
+function renderRepTarefa(){
+  document.querySelectorAll('#tarefaRepSeg button').forEach(b=>b.classList.toggle('on', b.dataset.r===tarefaRep));
+  document.getElementById('tarefaDiasBox').classList.toggle('hidden', tarefaRep!=='sem');
 }
 function renderDiaChips(){
   document.querySelectorAll('.diaChip[data-d]').forEach(ch=>
     ch.classList.toggle('on', novaDias.has(Number(ch.dataset.d))));
   document.getElementById('chipTodos').classList.toggle('on', novaDias.size===7);
 }
+function abrirTarefaModal(r){
+  tarefaEdit=r||null;
+  document.getElementById('tarefaTitulo').textContent = r ? 'Editar tarefa' : 'Nova tarefa';
+  document.getElementById('tarefaTexto').value = r ? r.texto : '';
+  document.getElementById('tarefaHora').value = r&&r.hora ? r.hora : '';
+  document.getElementById('tarefaDur').value = r&&r.dur ? String(r.dur) : '';
+  document.getElementById('tarefaExcluir').classList.toggle('hidden', !r);
+  tarefaEmoji = r&&r.emoji ? r.emoji : EMOJIS_TAREFA[0];
+  tarefaRep = r&&!r.data ? 'sem' : 'dia';
+  novaDias = r&&!r.data ? new Set(r.dias||[]) : TODOS_OS_DIAS();
+  renderEmojisTarefa(); renderRepTarefa(); renderDiaChips();
+  document.getElementById('tarefaModal').classList.remove('hidden');
+  if(!r) document.getElementById('tarefaTexto').focus();
+}
+document.querySelectorAll('#tarefaRepSeg button').forEach(b=>b.onclick=()=>{ tarefaRep=b.dataset.r; renderRepTarefa(); });
 document.querySelectorAll('.diaChip[data-d]').forEach(ch=>{
   ch.onclick=()=>{
     const d=Number(ch.dataset.d);
@@ -2633,25 +2687,42 @@ document.getElementById('chipTodos').onclick=()=>{
   novaDias = novaDias.size===7 ? new Set() : TODOS_OS_DIAS();
   renderDiaChips();
 };
-renderDiaChips();
-document.getElementById('metaForm').addEventListener('submit', async e=>{
+document.getElementById('tarefaForm').addEventListener('submit', async e=>{
   e.preventDefault();
-  const inp=document.getElementById('metaInput');
-  const texto=inp.value.trim();
-  if(!texto){ toast('Escreva a meta primeiro'); return; }
-  if(!novaDias.size){ toast('Escolha pelo menos um dia da semana'); return; }
-  await col('rotinas').add({
-    texto, dias:[...novaDias].sort((a,b)=>a-b),
-    hora: document.getElementById('metaHora').value || null,
-    criadoEm:firebase.firestore.FieldValue.serverTimestamp()
-  });
-  inp.value=''; document.getElementById('metaHora').value='';
-  novaDias=TODOS_OS_DIAS(); renderDiaChips();
-  toast('Meta programada! 📅');
-  inp.focus();
+  const texto=document.getElementById('tarefaTexto').value.trim();
+  if(!texto){ toast('Escreva a tarefa primeiro'); return; }
+  const dados={
+    texto, emoji:tarefaEmoji,
+    hora: document.getElementById('tarefaHora').value || null,
+    dur: Number(document.getElementById('tarefaDur').value) || null,
+  };
+  if(tarefaRep==='dia'){
+    dados.data = tarefaEdit&&tarefaEdit.data ? tarefaEdit.data : state.dia;
+    dados.dias = [new Date(dados.data+'T12:00').getDay()];
+  }else{
+    if(!novaDias.size){ toast('Escolha pelo menos um dia da semana'); return; }
+    dados.data = null;
+    dados.dias = [...novaDias].sort((a,b)=>a-b);
+  }
+  if(tarefaEdit){
+    await col('rotinas').doc(tarefaEdit.id).set(dados,{merge:true});
+    toast('Tarefa atualizada');
+  }else{
+    await col('rotinas').add({...dados, criadoEm:firebase.firestore.FieldValue.serverTimestamp()});
+    toast('Tarefa programada! 📅');
+  }
+  document.getElementById('tarefaModal').classList.add('hidden');
 });
-document.getElementById('prevDia').onclick=()=>{ state.dia=shiftDia(state.dia,-1); escutarDiaMetas(); };
-document.getElementById('nextDia').onclick=()=>{ state.dia=shiftDia(state.dia, 1); escutarDiaMetas(); };
+document.getElementById('tarefaExcluir').onclick=async ()=>{
+  if(!tarefaEdit) return;
+  const msg = tarefaEdit.data ? 'Excluir esta tarefa?' : 'Excluir esta tarefa? Ela sai de todos os dias da semana.';
+  if(!confirm(msg)) return;
+  await col('rotinas').doc(tarefaEdit.id).delete();
+  document.getElementById('tarefaModal').classList.add('hidden');
+  toast('Tarefa excluída');
+};
+document.getElementById('prevSem').onclick=()=>{ state.dia=shiftDia(state.dia,-7); escutarDiaMetas(); };
+document.getElementById('nextSem').onclick=()=>{ state.dia=shiftDia(state.dia, 7); escutarDiaMetas(); };
 document.getElementById('btnHojeDia').onclick=()=>{ state.dia=hojeISO(); escutarDiaMetas(); };
 
 /* ---------------- Baú de recompensas / Coleção de pets ---------------- */
@@ -2842,25 +2913,35 @@ function escutarInventario(){
   });
 }
 
+/* baús: um a cada TAREFAS_POR_BAU concluídas (não precisa fechar o dia inteiro) */
+function bausGanhos(total, feitas){
+  if(!total) return 0;
+  const primeiro=Math.min(TAREFAS_POR_BAU,total);
+  return feitas<primeiro ? 0 : 1+Math.floor((feitas-primeiro)/TAREFAS_POR_BAU);
+}
+function faltamParaBau(total, feitas){
+  const primeiro=Math.min(TAREFAS_POR_BAU,total);
+  return feitas<primeiro ? primeiro-feitas : TAREFAS_POR_BAU-((feitas-primeiro)%TAREFAS_POR_BAU);
+}
 function renderBau(total, feitas){
   const box=document.getElementById('bauBox');
   if(!total){ box.innerHTML=''; return; }
-  if(state.bauDia){
-    const pet=petById(state.bauDia.pet);
-    box.innerHTML=`<div class="bauHint">🎁 Baú do dia aberto: <b>${pet?esc(pet.nome):'?'}</b> ${RAR[state.bauDia.r].emoji} — veja na aba Coleção!</div>`;
-    return;
-  }
-  if(feitas===total){
+  const pend=Math.max(0, bausGanhos(total,feitas)-state.bausAbertos);
+  if(pend>0){
     box.innerHTML=`<div class="card bauCard">
       <div class="emoji">🎁</div>
-      <div class="info"><div class="t">Você ganhou um baú!</div>
-      <div class="s">Todas as metas do dia concluídas. Dentro dele vem um pet surpresa…</div></div>
+      <div class="info"><div class="t">${pend>1?`Você ganhou ${pend} baús!`:'Você ganhou um baú!'}</div>
+      <div class="s">Dentro dele vem um pet surpresa…</div></div>
       <button id="btnAbrirBau">Abrir baú</button>
     </div>`;
     document.getElementById('btnAbrirBau').onclick=abrirBau;
-  }else{
-    box.innerHTML=`<div class="bauHint">🎁 Complete todas as metas do dia para ganhar um baú com um pet surpresa! (${feitas}/${total})</div>`;
+    return;
   }
+  const falta=faltamParaBau(total,feitas);
+  const abertos=state.bausAbertos ? `${state.bausAbertos} baú${state.bausAbertos>1?'s':''} aberto${state.bausAbertos>1?'s':''} hoje · ` : '';
+  box.innerHTML = falta<=total-feitas
+    ? `<div class="bauHint">🎁 ${abertos}faltam ${falta} tarefa${falta>1?'s':''} para o próximo baú</div>`
+    : (abertos ? `<div class="bauHint">🎁 ${abertos.replace(' · ','')} — veja na aba Coleção!</div>` : '');
 }
 
 // deixa o pet parado no primeiro quadro da animação (evita a pose em T); rotação manual continua livre
@@ -2872,14 +2953,18 @@ function poseParada(mv){
   },{once:true});
 }
 
+let abrindoBau=false;
 async function abrirBau(){
-  if(state.bauDia) return;
+  if(abrindoBau) return;
+  abrindoBau=true;
   const pet=sortearPet();
   const dia=state.dia;
-  await col('metasStatus').doc(dia).set({bau:{pet:pet.id, r:pet.r,
-    abertoEm:firebase.firestore.FieldValue.serverTimestamp()}},{merge:true});
-  await col('inventario').add({pet:pet.id, r:pet.r, data:dia,
-    criadoEm:firebase.firestore.FieldValue.serverTimestamp()});
+  try{
+    await col('metasStatus').doc(dia).set({bausAbertos:state.bausAbertos+1, bau:{pet:pet.id, r:pet.r,
+      abertoEm:firebase.firestore.FieldValue.serverTimestamp()}},{merge:true});
+    await col('inventario').add({pet:pet.id, r:pet.r, data:dia,
+      criadoEm:firebase.firestore.FieldValue.serverTimestamp()});
+  }finally{ abrindoBau=false; }
   // animação: baú tremendo → revelação
   const body=document.getElementById('bauModalBody');
   body.innerHTML=`<div class="fase1">🎁</div><h3>Abrindo…</h3>`;
@@ -3233,7 +3318,8 @@ async function apiPush(path, body){
   return r.json();
 }
 function rotinasParaPush(){
-  return state.rotinas.filter(r=>r.hora).map(r=>({id:r.id,texto:r.texto,dias:r.dias||[],hora:r.hora}));
+  // tarefas de um dia só já passadas não precisam mais de aviso
+  return state.rotinas.filter(r=>r.hora && (!r.data || r.data>=hojeISO())).map(r=>({id:r.id,texto:r.texto,dias:r.dias||[],hora:r.hora}));
 }
 function tzLocal(){
   try{ return Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Sao_Paulo'; }
@@ -3287,7 +3373,7 @@ async function renderNotifUI(){
   sw.classList.toggle('on', on);
   sw.setAttribute('aria-checked', on);
   teste.classList.toggle('hidden', !on);
-  hint.textContent = on ? 'Ativo neste aparelho. Metas com horário vão gerar um aviso na hora certa.' :
+  hint.textContent = on ? 'Ativo neste aparelho. Tarefas com horário vão gerar um aviso na hora certa.' :
     'Vale por aparelho: ative no celular para receber os avisos nele.';
 }
 document.getElementById('notifSwitch').onclick=async ()=>{
@@ -3506,7 +3592,7 @@ function atualizarSeg(){
 document.querySelectorAll('#txTypeSeg button').forEach(b=>{
   b.onclick=()=>{ txTipo=b.dataset.t; atualizarSeg(); preencherCats(document.getElementById('txCat'),txTipo); };
 });
-document.getElementById('fabAdd').onclick=()=>abrirTxModal();
+document.getElementById('fabAdd').onclick=()=> state.aba==='metas' ? abrirTarefaModal() : abrirTxModal();
 
 document.getElementById('txForm').addEventListener('submit', async e=>{
   e.preventDefault();
@@ -4040,7 +4126,7 @@ document.getElementById('btnImpConfirm').onclick=async ()=>{
 /* ---------------- Guia de boas-vindas ---------------- */
 const GUIA_PASSOS=[
   {e:'👋',t:'Bem-vindo ao Ericzin!',c:`
-    <p>Seu organizador de finanças e rotina: gastos, análises, contas da casa e metas do dia — tudo num lugar só.</p>
+    <p>Seu organizador de finanças e rotina: gastos, análises, contas da casa e planner do dia — tudo num lugar só.</p>
     <ul>
       <li>Seus dados ficam salvos na nuvem: entre com a mesma conta no celular e no computador.</li>
       <li>Use as setas <b>‹ ›</b> no topo para trocar de mês.</li>
@@ -4092,26 +4178,28 @@ const GUIA_PASSOS=[
       <li>Toque em ✎ para editar ou em ✕ para excluir uma conta.</li>
       <li>O gráfico mostra o gasto mês a mês, somando todas as contas ou filtrando uma específica.</li>
     </ul>`},
-  {e:'✅',t:'Metas do dia',c:`
-    <p>Transforme tarefas em rotina — e ganhe recompensas por cumprir.</p>
+  {e:'✅',t:'Planner do dia',c:`
+    <p>Programe o seu dia e ganhe recompensas por cumprir.</p>
     <ul>
-      <li>Programe uma meta e escolha em quais <b>dias da semana</b> ela se repete (ou todos os dias).</li>
-      <li>Defina um <b>horário opcional 🔔</b> para receber uma notificação na hora (ative os avisos no seu perfil).</li>
-      <li>Marque as metas conforme for concluindo; navegue entre os dias com ‹ › ou o botão "Hoje".</li>
-      <li>Completou <b>todas</b> as metas do dia? Você ganha um <b>baú de recompensa</b>! 🎁</li>
+      <li>Toque no <b>+</b> para criar uma tarefa: nome, ícone, horário e duração (tudo opcional, só o nome é obrigatório).</li>
+      <li>Escolha se vale <b>só naquele dia</b> ou se <b>repete toda semana</b> nos dias que você marcar.</li>
+      <li>Com <b>horário</b> 🔔 você recebe uma notificação na hora (ative os avisos no seu perfil).</li>
+      <li>As tarefas ficam separadas em Manhã, Dia e Noite. Toque no círculo para concluir e na tarefa para editar ou excluir.</li>
+      <li>Escolha o dia na faixa da semana; use ‹ › para mudar de semana.</li>
+      <li>A cada <b>3 tarefas concluídas</b> você ganha um <b>baú de recompensa</b> 🎁 — não precisa fechar o dia inteiro!</li>
     </ul>`},
   {e:'🐾',t:'Coleção de pets',c:`
     <p>Cada baú traz um <b>pet 3D surpresa</b> para a sua coleção — são ${PETS.length} espécies para descobrir.</p>
     <ul>
       <li>Raridades: 🐣 Comum (60%), ⭐ Raro (25%), 💜 Épico (12%) e 👑 Lendário (3%).</li>
       <li>Toque em um pet descoberto para vê-lo em 3D, girando na tela.</li>
-      <li>Quanto mais dias com todas as metas cumpridas, mais perto de completar a coleção!</li>
+      <li>Quanto mais tarefas você cumprir, mais baús ganha e mais perto fica de completar a coleção!</li>
     </ul>`},
   {e:'👤',t:'Seu perfil',c:`
     <p>Toque no seu <b>avatar</b> no topo da tela para abrir o perfil.</p>
     <ul>
       <li>Troque sua <b>foto</b> e seu <b>nome</b>.</li>
-      <li>Ative os <b>avisos de metas neste aparelho</b> e envie uma notificação de teste.</li>
+      <li>Ative os <b>avisos do planner neste aparelho</b> e envie uma notificação de teste.</li>
       <li>Altere o <b>e-mail de login</b> ou a <b>senha</b> quando precisar, ou saia da conta.</li>
     </ul>`},
   {e:'📲',t:'Instale como aplicativo',c:`
